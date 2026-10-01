@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NJ VAP Archive</title>
+<meta name="description" content="Archived snapshot of New Jersey vacant and abandoned property records obtained through OPRA requests, 2025–2026.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --bg0: #070b1a;
+  --bg1: #0d1530;
+  --panel: rgba(11, 17, 36, 0.72);
+  --panel-brd: rgba(120, 160, 255, 0.18);
+  --ink: #e8edff;
+  --muted: #93a0c8;
+  --accent: #6ea8ff;
+  --gold: #f2c14e;
+  --o-fulfilled: #5bd28a;
+  --o-partial: #f2c14e;
+  --o-no_records: #b39ddb;
+  --o-pending: #e8955a;
+  --o-denied: #e0505c;
+  --o-no_response: #5d6688;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  background:
+    radial-gradient(1200px 700px at 75% -10%, #1a2b55 0%, transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, #14224a 0%, transparent 55%),
+    linear-gradient(160deg, var(--bg1), var(--bg0));
+  background-color: var(--bg0);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+a { color: var(--accent); }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 56px; }
+header { text-align: center; padding: 26px 0 8px; }
+h1 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 38px);
+  letter-spacing: 1.5px;
+  background: linear-gradient(120deg, #9ec5ff, #f2c14e 70%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.notice {
+  margin: 12px auto 0; max-width: 720px;
+  padding: 10px 14px; border-radius: 12px;
+  background: rgba(242, 193, 78, 0.08); border: 1px solid rgba(242, 193, 78, 0.35);
+  color: #f6dfa4; font-size: 14px;
+}
+.panel {
+  background: var(--panel); border: 1px solid var(--panel-brd);
+  border-radius: 14px; padding: 14px; margin-top: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stat { text-align: center; padding: 6px 4px; }
+.stat b { display: block; font-size: 24px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; }
+#map { height: 62vh; min-height: 360px; border-radius: 12px; background: #0b1226; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,0.35); }
+.legend .prop i { border-radius: 2px; background: #ff6fb5; }
+h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+p { margin: 0 0 10px; }
+.method p { color: #c9d2f0; font-size: 14px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.tabs { display: flex; gap: 6px; }
+button, select, input {
+  font: inherit; font-size: 14px; color: var(--ink);
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-brd);
+  border-radius: 9px; padding: 6px 10px;
+}
+button { cursor: pointer; }
+button[aria-selected="true"] { border-color: var(--accent); background: rgba(110, 168, 255, 0.16); }
+input[type=search] { flex: 1 1 160px; min-width: 0; }
+.downloads { margin-left: auto; font-size: 14px; display: flex; gap: 12px; flex-wrap: wrap; }
+.tablebox { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(120,160,255,0.1); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 9px; text-align: left; border-bottom: 1px solid rgba(120,160,255,0.09); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: #0e1631; }
+td.wrapcell { white-space: normal; min-width: 180px; }
+tbody tr:hover { background: rgba(110,168,255,0.06); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; color: #0b1020; font-weight: 600; }
+.more { margin-top: 10px; text-align: center; color: var(--muted); font-size: 13px; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #111a38; color: var(--ink); }
+.leaflet-popup-content { font-size: 13px; line-height: 1.45; margin: 12px 14px; }
+.leaflet-popup-content b { color: #fff; }
+.leaflet-popup-content .k { color: var(--muted); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-control-layers, .leaflet-bar a { background: #111a38; color: var(--ink); border-color: var(--panel-brd); }
+.leaflet-control-layers-expanded { color: var(--ink); }
+.leaflet-control-attribution { background: rgba(7,11,26,0.75) !important; color: var(--muted); }
+.leaflet-control-attribution a { color: var(--accent); }
+footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 22px; }
+@media (max-width: 640px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  #map { height: 56vh; }
+  .downloads { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>NJ Vacant &amp; Abandoned Property Records</h1>
+    <div class="notice">Archived October 1, 2026. Snapshot of NJ vacant &amp; abandoned property records obtained via OPRA. Not maintained. Being on a list doesn't mean a property is currently vacant; don't trespass.</div>
+  </header>
+
+  <section class="panel stats" aria-label="Totals">
+    <div class="stat"><b id="s-req">–</b><span>requests sent</span></div>
+    <div class="stat"><b id="s-ans">–</b><span>answered</span></div>
+    <div class="stat"><b id="s-prop">–</b><span>properties</span></div>
+    <div class="stat"><b id="s-geo">–</b><span>on the map</span></div>
+  </section>
+
+  <section class="panel">
+    <div id="map" role="region" aria-label="Map of requests and properties"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="panel method">
+    <h2>Method</h2>
+    <p>Records requests went to New Jersey municipal clerks in two rounds: a hand-sent round in spring 2025 (mostly South Jersey) and an automated round to nearly every municipality in May–June 2026, asking for vacant/abandoned or foreclosed-property registries, unsafe-structure orders, and long-term water shutoffs. Each municipality's dot shows the outcome of its most recent request; outcomes for 2026 were classified from reply text and checked against written denials. Lists that came back as spreadsheets, PDFs or email text were parsed, block/lot was normalized, and each property was placed on the map from the statewide NJOGIS parcel layer (Census geocoder as a fallback). Owner names, contact details and correspondence are left out. Lists are a mix of foreclosure registrations, vacant-property registrations and abandoned-property lists, so treat a listing as a lead, not a fact about today.</p>
+  </section>
+
+  <section class="panel">
+    <div class="controls">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-prop" aria-selected="true">Properties</button>
+        <button role="tab" id="tab-req" aria-selected="false">Requests</button>
+      </div>
+      <select id="county" aria-label="Filter by county"><option value="">All counties</option></select>
+      <input type="search" id="q" placeholder="Search town or address" aria-label="Search">
+      <div class="downloads">
+        <a href="data/properties.csv" download>properties.csv</a>
+        <a href="data/requests.csv" download>requests.csv</a>
+        <a href="data/properties.geojson" download>geojson</a>
+      </div>
+    </div>
+    <div class="tablebox"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    <div class="more" id="more"></div>
+  </section>
+
+  <footer>Data: CC0 · Code: MIT · Basemap © OpenStreetMap contributors · Parcels: NJOGIS · <a href="https://github.com/myceliation/vap">source</a></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const OUTCOMES = {
+  fulfilled: 'Records provided', partial: 'Partial', no_records: 'No records held',
+  pending: 'Acknowledged, not completed', denied: 'Denied', no_response: 'No response'
+};
+const css = getComputedStyle(document.documentElement);
+const color = o => css.getPropertyValue('--o-' + o).trim() || '#888';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false; else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const head = rows.shift();
+  return rows.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+}
+
+const map = L.map('map', { preferCanvas: true, zoomControl: true }).setView([40.07, -74.55], 8);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+let REQ = [], PROP = [], CENT = {}, tab = 'prop', shown = 200;
+
+Promise.all([
+  fetch('data/requests.csv').then(r => r.text()),
+  fetch('data/properties.csv').then(r => r.text()),
+  fetch('data/municipalities.json').then(r => r.json())
+]).then(([rq, pr, mu]) => {
+  REQ = parseCSV(rq); PROP = parseCSV(pr); CENT = mu;
+  stats(); drawRequests(); drawProperties(); legend(); counties(); render();
+});
+
+function stats() {
+  const answered = REQ.filter(r => r.outcome !== 'no_response').length;
+  document.getElementById('s-req').textContent = REQ.length.toLocaleString();
+  document.getElementById('s-ans').textContent = answered.toLocaleString();
+  document.getElementById('s-prop').textContent = PROP.length.toLocaleString();
+  document.getElementById('s-geo').textContent = PROP.filter(p => p.lat).length.toLocaleString();
+}
+
+const reqLayer = L.layerGroup(), propLayer = L.layerGroup();
+function drawRequests() {
+  const by = {};
+  REQ.forEach(r => (by[r.muni_code] = by[r.muni_code] || []).push(r));
+  Object.entries(by).forEach(([code, rs]) => {
+    const c = CENT[code]; if (!c) return;
+    rs.sort((a, b) => a.round.localeCompare(b.round));
+    const latest = rs[rs.length - 1];
+    const html = `<b>${esc(latest.municipality)}</b> <span class="k">· ${esc(latest.county)} County</span>` + rs.map(r =>
+      `<div style="margin-top:6px"><span class="pill" style="background:${color(r.outcome)}">${esc(OUTCOMES[r.outcome] || r.outcome)}</span> <span class="k">${esc(r.round)} round</span><br>` +
+      (r.request_date ? `<span class="k">Requested</span> ${esc(r.request_date)}<br>` : '') +
+      (r.response_date ? `<span class="k">Answered</span> ${esc(r.response_date)}` + (r.days_to_response !== '' ? ` (${esc(r.days_to_response)} days)` : '') + '<br>' : '') +
+      (r.n_records ? `<span class="k">Properties listed</span> ${esc(r.n_records)}<br>` : '') +
+      (r.notes ? `<span class="k">${esc(r.notes)}</span>` : '') + '</div>').join('');
+    L.circleMarker([c[1], c[0]], { radius: 6, weight: 1, color: '#0b1020', fillColor: color(latest.outcome), fillOpacity: 0.9 })
+      .bindPopup(html, { maxWidth: 280 }).addTo(reqLayer);
+  });
+  reqLayer.addTo(map);
+}
+function drawProperties() {
+  PROP.forEach(p => {
+    if (!p.lat) return;
+    const bl = p.block ? `${esc(p.block)} / ${esc(p.lot)}${p.qualifier ? ' / ' + esc(p.qualifier) : ''}` : '—';
+    const html = `<b>${esc(p.address || '(no address)')}</b><br><span class="k">${esc(p.municipality)}, ${esc(p.county)} County</span><br>` +
+      `<span class="k">Block / lot</span> ${bl}<br><span class="k">Listed as</span> ${esc(p.listed_status)}<br>` +
+      `<span class="k">Source</span> ${esc(p.source_file)}<br><span class="k">List date</span> ${esc(p.list_date || 'not stated')}<br>` +
+      `<span class="k">Verified on pogodata</span> ${esc(p.pogodata_verified || 'not checked')}` +
+      (p.abandonment_score ? `<br><span class="k">Abandonment call</span> ${esc(p.abandonment_score)}` : '');
+    L.circleMarker([+p.lat, +p.lon], { radius: 3.5, weight: 0.6, color: '#0b1020', fillColor: "#ff6fb5", fillOpacity: 0.9 })
+      .bindPopup(html, { maxWidth: 280 }).addTo(propLayer);
+  });
+  propLayer.addTo(map);
+  L.control.layers(null, { 'Requests (by town)': reqLayer, 'Properties': propLayer }, { collapsed: true }).addTo(map);
+}
+function legend() {
+  const counts = {};
+  const latest = {};
+  REQ.forEach(r => { if (!latest[r.muni_code] || latest[r.muni_code].round < r.round) latest[r.muni_code] = r; });
+  Object.values(latest).forEach(r => counts[r.outcome] = (counts[r.outcome] || 0) + 1);
+  document.getElementById('legend').innerHTML = Object.keys(OUTCOMES).map(o =>
+    `<span><i style="background:${color(o)}"></i>${OUTCOMES[o]} (${counts[o] || 0})</span>`).join('') +
+    `<span class="prop"><i></i>Listed property</span>`;
+}
+function counties() {
+  const set = [...new Set(REQ.map(r => r.county).concat(PROP.map(p => p.county)))].filter(Boolean).sort();
+  const sel = document.getElementById('county');
+  set.forEach(c => sel.insertAdjacentHTML('beforeend', `<option>${esc(c)}</option>`));
+}
+
+const COLS = {
+  prop: [['municipality','Town'],['address','Address'],['block','Block'],['lot','Lot'],['listed_status','Listed as'],['list_date','List date'],['round','Round'],['geocode_method','Located by']],
+  req: [['municipality','Town'],['county','County'],['round','Round'],['outcome','Outcome'],['request_date','Requested'],['response_date','Answered'],['days_to_response','Days'],['n_records','Properties'],['notes','Notes']]
+};
+function render() {
+  const county = document.getElementById('county').value;
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const rows = (tab === 'prop' ? PROP : REQ).filter(r =>
+    (!county || r.county === county) &&
+    (!q || (r.municipality + ' ' + (r.address || '') + ' ' + (r.notes || '')).toLowerCase().includes(q)));
+  const cols = COLS[tab];
+  document.getElementById('thead').innerHTML = '<tr>' + cols.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
+  document.getElementById('tbody').innerHTML = rows.slice(0, shown).map(r => '<tr>' + cols.map(([k]) => {
+    if (k === 'outcome') return `<td><span class="pill" style="background:${color(r[k])}">${esc(OUTCOMES[r[k]] || r[k])}</span></td>`;
+    const wide = k === 'listed_status' || k === 'notes' || k === 'address';
+    return `<td${wide ? ' class="wrapcell"' : ''}>${esc(r[k])}</td>`;
+  }).join('') + '</tr>').join('');
+  const more = document.getElementById('more');
+  more.innerHTML = rows.length > shown
+    ? `Showing ${shown} of ${rows.length.toLocaleString()} · <button id="show-more">Show more</button>`
+    : `${rows.length.toLocaleString()} rows`;
+  const b = document.getElementById('show-more'); if (b) b.onclick = () => { shown += 400; render(); };
+}
+document.getElementById('county').onchange = () => { shown = 200; render(); };
+document.getElementById('q').oninput = () => { shown = 200; render(); };
+['prop', 'req'].forEach(t => document.getElementById('tab-' + t).onclick = () => {
+  tab = t; shown = 200;
+  document.getElementById('tab-prop').setAttribute('aria-selected', t === 'prop');
+  document.getElementById('tab-req').setAttribute('aria-selected', t === 'req');
+  render();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# raw inputs and caches stay local
+data/raw/
+data/work/
+data/cache/parcels/
+data/cache/census/
+__pycache__/
