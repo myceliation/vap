@@ -3,9 +3,19 @@
 **Status: archived (October 1, 2026). Not maintained.**
 Live page: <https://myceliation.github.io/vap/>
 
-A snapshot of what New Jersey municipalities sent back when asked, under the Open Public Records Act (OPRA), for their lists of vacant, abandoned and foreclosed properties. The page maps two things: how each town answered, and the properties on the lists that came back.
+A snapshot of what New Jersey municipalities sent back when asked, under the Open Public Records Act (OPRA), for their lists of vacant, abandoned and foreclosed properties. The page maps how each town answered and the properties on the lists that came back. A second set of layers adds other abandoned places drawn from open map data, along with some educated guesses.
 
-Being on a list does not mean a property is vacant today. Many entries are foreclosure registrations on occupied homes, and lists go stale fast. Don't trespass.
+Being on a list does not mean a property is vacant today; lists go stale fast. Most of the other places are private land, some are unsafe, and brownfields can be contaminated. Don't trespass.
+
+## Publishing
+
+On Windows, double-click `push_to_github.bat`. The first run does the following:
+
+1. Installs Git and the GitHub CLI if they're missing.
+2. Opens a browser once so you can log in.
+3. Creates `myceliation/vap`, pushes, and turns on GitHub Pages.
+
+Later runs commit whatever changed and push it. `data/raw/` and the caches are never uploaded.
 
 ## Counts
 
@@ -19,18 +29,46 @@ Being on a list does not mean a property is vacant today. Many entries are forec
 | Partial | 1 | 2 | 3 |
 | Acknowledged, never completed | 12 | 45 | 57 |
 | No response | 72 | 159 | 231 |
-| Properties in `properties.csv` | 2,509 | 63 | 2,572 (30 municipalities) |
-| Properties with a map point | | | 2,416 |
+| Properties in `properties.csv` | 2,332 | 60 | 2,392 (30 municipalities) |
+| Properties with a map point | | | 2,236 |
 
 Median time to a substantive reply in 2026: 6 days.
 
+| Other places (`places.csv`) | Count |
+|---|---|
+| Mapped: a public source says abandoned, disused, ruined, closed or brownfield | 942 |
+| Inferred: idle-tower and military-site guesses, names that say "former"/"abandoned" | 236 |
+| Total | 1,178 |
+| Abandoned or disused rail line segments (`rail.geojson`) | 3,195 |
+| Census tracts with "other vacant" housing figures (`vacancy_tracts.geojson`) | 2,175 |
+
 ## Method
+
+### OPRA records
 
 1. **Requests.** Spring 2025: requests sent by hand, mostly to South Jersey towns, tracked in a spreadsheet without dates. May–June 2026: an automated email to nearly every municipal clerk asking for (1) the vacant/abandoned/foreclosed-property registry, (2) unsafe-structure and condemnation orders from the last 24 months, and (3) residential water shutoffs of 12+ months.
 2. **Outcomes.** 2026 outcomes were classified from the subject and preview text of every reply (`scripts/build_requests_2026.py`), then corrected using the written-denial and portal-refusal calls recorded during the project. 2025 outcomes come from the hand-kept tracker.
 3. **Lists.** Spreadsheets, text PDFs, Word files and reply-email bodies were parsed (`scripts/parse_lists.py`). Scanned PDFs got one OCR pass (tesseract). Block and lot were normalized: leading zeros stripped, all-zero decimals dropped, condo qualifiers (e.g. `C0214`) kept in their own column.
-4. **Location.** Each property was joined to the NJOGIS *Parcels and MOD-IV Composite of NJ* layer on `PAMS_PIN` = `muni_code_block_lot[_qualifier]` and placed at the parcel centroid. Rows without block/lot were matched by street address inside the same municipality; the rest went to the US Census batch geocoder and were kept only if they landed within 12 km of the town (`scripts/geocode.py`). Responses are cached and requests throttled.
-5. **Privacy.** Only the normalized CSVs are published. Owner names, registrant/servicer names, custodian names, emails, phone numbers and correspondence text are dropped. Raw PDFs and spreadsheets are not in this repo.
+4. **Location.** Each property was joined to the NJOGIS *Parcels and MOD-IV Composite of NJ* layer on `PAMS_PIN` = `muni_code_block_lot[_qualifier]` and placed at the parcel centroid. Rows without block/lot were matched by street address inside the same municipality; the rest went to the US Census batch geocoder and were kept only if they landed within 12 km of the town (`scripts/geocode.py`).
+5. **Privacy.** Only the normalized CSVs are published. Owner names, registrant/servicer names, custodian names, emails, phone numbers and correspondence text are dropped. Homes the source list itself marks as owner- or tenant-occupied (181 rows, mostly Egg Harbor Township foreclosure registrations) are left out: those are households in foreclosure, not abandoned places. Raw PDFs and spreadsheets are not in this repo.
+
+### Other places
+
+| Signal | Basis | Source | Script |
+|---|---|---|---|
+| Features tagged `abandoned:*`, `disused:*`, `ruins`, `historic=ruins`, `building=abandoned`, `abandoned=yes`, `disused=yes`, `landuse=brownfield` | mapped | OpenStreetMap NJ extract (Geofabrik) | `osm_abandoned.py` |
+| Rail lines tagged `railway=abandoned` or `disused` that aren't already a trail | mapped | OpenStreetMap | `osm_abandoned.py` |
+| NJ items whose state of use is permanently closed, decommissioned, abandoned or out of service, plus ghost towns and ruins (demolished items excluded) | mapped | Wikidata | `build_places.py` |
+| Towers 30 m+ whose FCC registration was **terminated with no dismantle notice** (60), or **not touched since 2006 or earlier** (54) | inferred | FCC Antenna Structure Registration | `build_places.py` |
+| Nike missile sites, coastal batteries, forts and bunkers, by tag or name | inferred | OpenStreetMap | `osm_military.py` |
+| Features whose name says "abandoned", "former … school/hospital", "ruins", etc. | inferred | OpenStreetMap | `osm_military.py` |
+| Share of housing units vacant for reasons other than rent, sale, seasonal or migrant use ("other vacant", B25004_008) | context | ACS 2018–2022 via Esri Living Atlas | `build_places.py` |
+
+The "other vacant" share is the closest census measure to long-empty houses because it excludes summer homes. The NJ tract median is 1.7%, and 286 tracts are at 5% or higher.
+
+Not scraped: Urbexology and similar urbex sites. Their terms forbid copying or redistributing their content, and their free map positions come from OpenStreetMap, which is used directly here.
+
+Closed storefronts, level crossings, taxiways, monitoring stations, road segments and golf-course sand traps were filtered out of the OpenStreetMap results. Map features and Wikidata items within 150 m of each other with the same name were merged.
 
 ## Data dictionary
 
@@ -61,13 +99,27 @@ Median time to a substantive reply in 2026: 6 days.
 | source_file | The response file or channel it came from |
 | list_date | Date of the list, when stated (year only when that's all the list gave) |
 | pogodata_verified | `yes` / `no` where a block/lot was checked against pogodata.org during the project; blank = not checked |
-| abandonment_score | Likelihood call carried over from the project's review (Barnegat only): `Very likely`, `Likely`, `Possible`, `Unlikely` |
+| abandonment_score | Likelihood call carried over from the project's review (Barnegat only): `Very likely`, `Likely`, `Possible` |
 | listed_status | What kind of list and what it said (e.g. `foreclosure registration: Registered`, `abandoned structure list; aband`) |
 | geocode_method | `njogis_parcel`, `njogis_address`, `census`, or `unresolved` |
 | round | Request round the list came from |
 | lat, lon | WGS84 point (blank when unresolved) |
 
-`data/properties.geojson` holds the same rows that have a point. `data/municipalities.json` holds municipal centroids (NJOGIS) for the request layer.
+### `data/places.csv` — one row per other place
+
+| column | meaning |
+|---|---|
+| category | Brownfields, Ruins, Ghost towns, Industrial & utility, Institutions, Leisure & lodging, Military & Cold War, Rail & transport, Towers & masts, Other buildings & sites |
+| basis | `mapped` (a public source says so) or `inferred` (a signal suggests it) |
+| name | Name in the source; FCC towers are named by registration number |
+| kind | Feature type from the source (e.g. `substation`, `railway station`, `monopole`) |
+| status | What the source says, or the reason for the guess |
+| county, municipality | From NJOGIS municipal boundaries |
+| source, link | OpenStreetMap, Wikidata or FCC ASR, with a link to the record |
+| note | Height and build year for towers; tags for military sites; dates where known |
+| lat, lon | WGS84 point (way and area features use the centroid of their nodes) |
+
+`data/properties.geojson` and `data/places.geojson` hold the same rows as points. `data/rail.geojson` has simplified rail lines with `name`, `state` and `osm` id. `data/vacancy_tracts.geojson` has simplified tract outlines with `units`, `other_vacant`, `moe`, `seasonal` and `pct`. `data/municipalities.json` holds municipal centroids for the request layer.
 
 ## Known gaps
 
@@ -77,7 +129,8 @@ Median time to a substantive reply in 2026: 6 days.
 - **One-pass OCR.** Atlantic City's scanned abandoned-property list yielded 73 parcels (some rows unreadable; addresses come from the parcel layer). Commercial Township's scanned registration wasn't parsed. A rotated Bergenfield scan yielded 8 addresses.
 - **156 properties have no point**, mostly South Brunswick commercial suites and Franklin Township structures listed by street only.
 - **Barnegat** rows keep the source block/lot as written, including suspected transcription errors flagged during the original review.
-- **Left out on purpose:** tax-delinquency reports, code-violation and incident logs, 2017–2022 registration logs, files from an unrelated 2020 request, and requests to state agencies.
+- **Other places are uneven.** OpenStreetMap coverage depends on who mapped where; brownfields cluster in a few cities. An FCC registration going quiet is a weak signal, and plenty of those towers are still in service. Many military sites are now parks.
+- **Left out on purpose:** tax-delinquency reports, code-violation and incident logs, 2017–2022 registration logs, files from an unrelated 2020 request, requests to state agencies, and closed storefronts.
 - Pine Valley (merged into Pine Hill in 2022) is dropped from the 2025 ledger.
 
 ## Rebuilding
@@ -88,8 +141,16 @@ Raw inputs aren't published. With them in local folders:
 RAW=/path/to/responses OCR=/path/to/ocr_text python scripts/parse_lists.py
 python scripts/geocode.py
 OPRA_SENDERS=you@example.com WORK=/path/to/work python scripts/build_requests.py
+python scripts/osm_abandoned.py new-jersey-latest.osm.pbf
+python scripts/osm_military.py new-jersey-latest.osm.pbf
+FCC_DIR=/path/to/unzipped/r_tower python scripts/build_places.py
 ```
+
+Python packages: `pandas`, `openpyxl`, `pdfplumber`, `osmium`, `shapely`.
 
 ## License
 
-Data (`data/`): CC0 1.0. Code: MIT (see `LICENSE`). Parcel geometry: NJOGIS. Basemap: © OpenStreetMap contributors.
+- `data/requests.csv`, `data/properties.*`, `data/vacancy_tracts.geojson`, `data/municipalities.json`: CC0 1.0.
+- `data/places.*` and `data/rail.geojson` contain OpenStreetMap data and are under the Open Database License (ODbL) 1.0, © OpenStreetMap contributors. The Wikidata rows in them are CC0 and the FCC rows are public domain.
+- Code: MIT (see `LICENSE`).
+- Parcel geometry and municipal boundaries: NJOGIS. Basemap: © OpenStreetMap contributors.

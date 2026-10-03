@@ -1,6 +1,6 @@
 # raw inputs and caches stay local
 data/raw/
 data/work/
-data/cache/parcels/
-data/cache/census/
+data/cache/*
+!data/cache/muni_centroids.json
 __pycache__/

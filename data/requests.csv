@@ -6,7 +6,7 @@ Atlantic,Buena Borough,0104,,pending,,,,"acknowledged, never completed",2025
 Atlantic,Buena Vista Township,0105,,no_response,,,,,2025
 Atlantic,Corbin City,0106,,no_response,,,,,2025
 Atlantic,Egg Harbor City,0107,,fulfilled,,,,list not among saved files,2025
-Atlantic,Egg Harbor Township,0108,,fulfilled,,,269,list on file (no_response in tracker),2025
+Atlantic,Egg Harbor Township,0108,,fulfilled,,,92,list on file (no_response in tracker),2025
 Atlantic,Estell Manor City,0109,,no_response,,,,,2025
 Atlantic,Folsom Borough,0110,,no_response,,,,,2025
 Atlantic,Galloway Township,0111,,no_response,,,,,2025
@@ -541,7 +541,7 @@ Morris,Victory Gardens Borough,1437,2026-05-21,denied,2026-05-21,0,,required por
 Morris,Washington Township,1438,2026-05-21,no_response,,,,bounced,2026
 Morris,Wharton Borough,1439,2026-05-21,no_response,,,,auto-reply only,2026
 Ocean,Barnegat Light Borough,1502,2026-05-21,no_response,,,,deemed denied,2026
-Ocean,Barnegat Township,1501,2026-05-21,fulfilled,2026-05-21,0,26,,2026
+Ocean,Barnegat Township,1501,2026-05-21,fulfilled,2026-05-21,0,23,,2026
 Ocean,Bay Head Borough,1503,2026-05-21,pending,2026-05-22,1,,"replied, outcome unclear",2026
 Ocean,Beach Haven Borough,1504,2026-05-21,pending,2026-06-02,12,,"acknowledged, never completed",2026
 Ocean,Beachwood Borough,1505,2026-05-21,fulfilled,2026-05-21,0,,"records attached, not parsed",2026

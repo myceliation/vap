@@ -283,6 +283,12 @@ def main():
                winslow, jersey_city, franklin_assessments, quinton, beachwood, south_brunswick, aberdeen, atlantic_city,
                maurice_river, bergenfield, barnegat, inline_2026]:
         n0 = len(ROWS); fn(); print(f'{getattr(fn, "__name__", "?"):22} +{len(ROWS) - n0}')
+    # Privacy: drop homes the source itself marks as lived in. A foreclosure registration on an
+    # occupied home is a household's financial trouble, not an abandoned place.
+    OCCUPIED = re.compile(r'owner occupied|tenant occupied|noted currently occupied', re.I)
+    dropped = [r for r in ROWS if OCCUPIED.search(r['listed_status']) or r['abandonment_score'] == 'Unlikely']
+    ROWS[:] = [r for r in ROWS if r not in dropped]
+    print(f'dropped {len(dropped)} rows marked occupied')
     # de-duplicate exact repeats within a source
     seen, out = set(), []
     for r in ROWS:
