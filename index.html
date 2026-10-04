@@ -4,609 +4,557 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NJ VAP Archive</title>
-<meta name="description" content="Archived snapshot of New Jersey vacant and abandoned property records obtained through OPRA requests in 2025 and 2026, plus other abandoned places from open map data.">
+<meta name="description" content="New Jersey vacant and abandoned property records from OPRA requests (2025–2026), and a map of known abandoned, closed and ruined places from Maryland to Maine, Quebec and the Maritimes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
 <style>
 :root {
-  --blotter: #2d4535;
-  --blotter-dark: #1f3226;
-  --stitch: #9db394;
-  --manila: #e6d29c;
-  --manila-edge: #c7b06e;
-  --bond: #fbfbf7;
-  --ink: #24304d;
-  --ink-soft: #4d5873;
-  --stamp: #5a3c8c;
-  --greenbar: #d6ead0;
-  --tape: rgba(222, 205, 160, 0.78);
-  --o-fulfilled: #2f8a47;
-  --o-partial: #d8b21f;
-  --o-no_records: #4d6ea8;
-  --o-pending: #d77a24;
-  --o-denied: #b0271f;
-  --o-no_response: #8d8d86;
-  --c-prop: #5a3c8c;
-  --c-place: #1d1d1b;
-  --c-guess: #8d5a17;
-  --c-rail: #6b4a2b;
-  --type: "Courier Prime", "Courier New", Courier, monospace;
-  --worn: "Special Elite", "Courier Prime", "Courier New", monospace;
+  --ink: #1b1b1b;
+  --muted: #565c65;
+  --rule: #dfe1e2;
+  --rule-strong: #a9aeb1;
+  --panel: #ffffff;
+  --wash: #f0f0f0;
+  --blue: #005ea2;
+  --blue-dark: #1a4480;
+  --focus: #2491ff;
+  --note: #faf3d1;
+  --note-rule: #e5a000;
+  --header-h: 52px;
 }
 * { box-sizing: border-box; }
-html { background: var(--blotter-dark); }
+html, body { margin: 0; height: 100%; }
 body {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--type);
-  font-size: 16px;
-  line-height: 1.5;
-  background-color: var(--blotter);
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 50% 30%, rgba(255,255,255,.07), rgba(0,0,0,.35) 75%);
-  overflow-x: hidden;
+  font-family: "Public Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px; line-height: 1.45; color: var(--ink); background: var(--panel);
 }
-a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, label:focus-within {
-  outline: 2px dashed var(--stamp); outline-offset: 2px;
-}
+a { color: var(--blue); }
+a:hover { color: var(--blue-dark); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+button, select, input { font: inherit; color: inherit; }
 
-/* ---------- the blotter ---------- */
-.blotter {
-  max-width: 1160px;
-  margin: 18px auto 28px;
-  padding: 26px 26px 34px;
-  position: relative;
+/* header */
+header {
+  height: var(--header-h); display: flex; align-items: center; gap: 18px;
+  padding: 0 16px; border-bottom: 1px solid var(--rule); background: var(--panel); position: relative; z-index: 3;
 }
-.blotter::before {
-  content: ""; position: absolute; inset: 8px; pointer-events: none;
-  border: 2px dashed var(--stitch); border-radius: 10px; opacity: .55;
+.brand { font-weight: 700; font-size: 16px; white-space: nowrap; }
+.brand span { font-weight: 400; color: var(--muted); }
+nav.tabs { display: flex; height: 100%; gap: 4px; }
+nav.tabs button {
+  border: 0; background: none; padding: 0 12px; height: 100%; cursor: pointer; color: var(--muted);
+  border-bottom: 3px solid transparent; font-weight: 600;
 }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--blue); }
+nav.tabs button:hover { color: var(--ink); }
+.about-link { margin-left: auto; background: none; border: 0; color: var(--blue); cursor: pointer; text-decoration: underline; padding: 4px 0; }
 
-/* ---------- the case folder ---------- */
-.folder {
-  position: relative;
-  margin-top: 30px;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .45  0 0 0 0 .36  0 0 0 0 .1  0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23f)'/%3E%3C/svg%3E"),
-    linear-gradient(175deg, #ecdaa8, var(--manila) 40%, #dcc78c);
-  border-radius: 3px 6px 6px 6px;
-  padding: 26px 26px 30px;
-  box-shadow: 0 1px 0 var(--manila-edge) inset, 0 14px 28px rgba(0,0,0,.45), 0 2px 3px rgba(0,0,0,.3);
-}
-.folder::before { /* the tab */
-  content: ""; position: absolute; left: 0; top: -30px; height: 32px; width: min(520px, 78%);
-  background: linear-gradient(180deg, #ead7a2, var(--manila));
-  border-radius: 6px 10px 0 0;
-  clip-path: polygon(0 0, 96% 0, 100% 100%, 0 100%);
-}
-.label-strip {
-  position: absolute; left: 14px; top: -24px; z-index: 2;
-  max-width: calc(min(520px, 78%) - 40px);
-  background: var(--bond);
-  border-top: 3px solid #4f7bbf;
-  padding: 2px 12px 3px;
-  font-family: var(--worn);
-  font-size: clamp(14px, 2.2vw, 19px);
-  line-height: 1.25;
-  color: var(--ink);
-  box-shadow: 0 1px 1px rgba(0,0,0,.18);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-h1 {
-  font-family: var(--worn);
-  font-weight: 400;
-  font-size: clamp(28px, 4.6vw, 50px);
-  line-height: 1.05;
-  margin: 6px 0 4px;
-  max-width: 17ch;
-  letter-spacing: .5px;
-  color: var(--ink);
-}
-.file-no { margin: 0; color: var(--ink-soft); font-size: 15px; }
+/* app frame */
+.app { display: grid; grid-template-columns: 370px 1fr; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); }
+aside { border-right: 1px solid var(--rule); overflow-y: auto; background: var(--panel); }
+.pane { padding: 16px 16px 24px; }
+.pane[hidden] { display: none; }
+#map { position: relative; min-height: 320px; }
 
-.stamp {
-  position: absolute; right: 30px; top: 18px;
-  transform: rotate(-9deg);
-  color: var(--stamp);
-  border: 4px double var(--stamp);
-  border-radius: 6px;
-  padding: 4px 14px 6px;
-  text-align: center;
-  mix-blend-mode: multiply;
-  opacity: .95;
-  border-width: 5px;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.5 1.55'/%3E%3C/filter%3E%3Crect width='300' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
-          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.5 1.55'/%3E%3C/filter%3E%3Crect width='300' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
-  animation: thunk .45s cubic-bezier(.2,.8,.3,1.2) .35s both;
-}
-.stamp b { display: block; font-family: var(--worn); font-weight: 400; font-size: clamp(30px, 4.4vw, 46px); letter-spacing: 4px; line-height: 1; }
-.stamp span { display: block; font-weight: 700; font-size: 14px; letter-spacing: 2px; }
-@keyframes thunk { from { transform: rotate(-9deg) scale(1.6); opacity: 0; } to { transform: rotate(-9deg) scale(1); opacity: .95; } }
-@media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
+h2 { font-size: 20px; line-height: 1.25; margin: 0 0 6px; }
+h3 { font-size: 13px; font-weight: 700; margin: 18px 0 6px; color: var(--muted); }
+p { margin: 0 0 10px; }
+.lede { color: var(--muted); margin-bottom: 12px; }
+.note { background: var(--note); border-left: 4px solid var(--note-rule); padding: 8px 12px; font-size: 14px; margin: 0 0 12px; }
+.small { font-size: 13px; color: var(--muted); }
 
-.notice {
-  margin: 18px 0 0;
-  max-width: 62ch;
-  background-color: var(--bond);
-  background-image: linear-gradient(transparent 29px, #d65b5b 29px 30px, transparent 30px),
-    linear-gradient(var(--bond) 0 30px, transparent 30px),
-    repeating-linear-gradient(transparent 0 23px, #b9cfe9 23px 24px);
-  background-position: 0 0, 0 0, 0 40px;
-  padding: 34px 18px 10px;
-  line-height: 24px;
-  font-size: 15.5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,.22);
-  transform: rotate(-.4deg);
-}
-.notice p { margin: 0; }
-.notice p + p { margin-top: 24px; }
+/* layer & filter lists */
+.checks { list-style: none; margin: 0; padding: 0; }
+.checks li { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.checks label { display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1; min-width: 0; }
+.checks input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); flex: none; }
+.checks .count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+.sw { width: 12px; height: 12px; border-radius: 50%; flex: none; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.sw.ring { background: #fff !important; border: 2.5px solid currentColor; box-shadow: none; }
+.sw.line { width: 18px; height: 0; border-radius: 0; border: 0; border-top: 2px dashed #6b4a2b; box-shadow: none; }
+.sw.ramp { width: 26px; height: 12px; border-radius: 2px; border: 0; background: linear-gradient(90deg, #fdd9b5, #e6550d, #7f2704); box-shadow: none; }
+.sublegend { list-style: none; margin: 2px 0 6px 24px; padding: 0; font-size: 13px; color: var(--muted); }
+.sublegend li { display: flex; align-items: center; gap: 7px; padding: 1px 0; }
+.sublegend .sw { width: 10px; height: 10px; }
+.cat-actions { display: flex; gap: 12px; font-size: 13px; margin: 2px 0 4px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--blue); cursor: pointer; text-decoration: underline; font-size: 13px; }
 
-/* ---------- map + tape ---------- */
-.hero { display: grid; grid-template-columns: 1fr 230px; gap: 26px; align-items: end; }
-.hero .tape { margin-top: 150px; }
-.evidence { display: grid; grid-template-columns: 1fr 260px; gap: 26px; margin-top: 30px; align-items: start; }
-.mapsheet {
-  position: relative;
-  background: var(--bond);
-  padding: 10px 10px 12px;
-  box-shadow: 0 3px 8px rgba(0,0,0,.28);
+.field { display: grid; gap: 4px; margin: 10px 0; }
+.field span { font-size: 13px; font-weight: 600; }
+.field select, .field input[type=search] {
+  width: 100%; padding: 7px 9px; border: 1px solid var(--rule-strong); border-radius: 4px; background: #fff;
 }
-.mapsheet::before, .mapsheet::after {
-  content: ""; position: absolute; width: 96px; height: 26px; background: var(--tape); z-index: 500;
-  box-shadow: 0 1px 2px rgba(0,0,0,.12);
-}
-.mapsheet::before { left: -24px; top: 10px; transform: rotate(-38deg); }
-.mapsheet::after { right: -24px; top: 10px; transform: rotate(38deg); }
-#map { height: 64vh; min-height: 380px; background: #e9e4d4; }
-.leaflet-tile-pane { filter: sepia(.28) saturate(.72) contrast(.96); }
-.caption { margin: 8px 2px 0; font-size: 14px; color: var(--ink-soft); }
+.seg { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+.seg button { border: 0; background: #fff; padding: 5px 12px; cursor: pointer; font-size: 14px; }
+.seg button + button { border-left: 1px solid var(--rule-strong); }
+.seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
 
-.tape {
-  background: #fff;
-  padding: 18px 14px 26px;
-  font-size: 15px;
-  box-shadow: 0 3px 6px rgba(0,0,0,.28);
-  clip-path: polygon(0 6px, 6% 0, 12% 6px, 18% 0, 24% 6px, 30% 0, 36% 6px, 42% 0, 48% 6px, 54% 0, 60% 6px, 66% 0, 72% 6px, 78% 0, 84% 6px, 90% 0, 96% 6px, 100% 0, 100% 100%, 0 100%);
+/* result list */
+.results { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.results li { border-bottom: 1px solid var(--rule); }
+.results button {
+  width: 100%; text-align: left; background: none; border: 0; padding: 8px 2px; cursor: pointer; display: grid;
+  grid-template-columns: 12px 1fr; column-gap: 9px; align-items: start;
 }
-.tape ol { list-style: none; margin: 0; padding: 0; }
-.tape li { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; padding: 9px 0 7px; border-bottom: 1px dotted #c9c9c3; }
-.tape li:last-child { border-bottom: 0; }
-.tape .n { font-weight: 700; font-size: 21px; text-align: right; font-variant-numeric: tabular-nums; grid-column: 1; }
-.tape .key { grid-column: 2; align-self: center; font-weight: 700; color: var(--ink-soft); }
-.tape .what { grid-column: 1 / -1; text-align: right; font-size: 13.5px; color: var(--ink-soft); }
-.tape .head { text-align: center; font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+.results button:hover { background: var(--wash); }
+.results .sw { margin-top: 4px; }
+.results .t { font-weight: 600; overflow-wrap: anywhere; }
+.results .s { grid-column: 2; font-size: 13px; color: var(--muted); }
+.more { margin-top: 8px; }
+.more button { border: 1px solid var(--rule-strong); background: #fff; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.dl { margin-top: 18px; font-size: 13px; }
+.dl a { display: inline-block; margin-right: 10px; white-space: nowrap; }
 
-.key-card {
-  margin-top: 0;
-  background-color: var(--bond);
-  background-image: linear-gradient(transparent 27px, #d65b5b 27px 28px, transparent 28px);
-  padding: 8px 14px 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,.22);
-  font-size: 14.5px;
-}
-.key-card h2 { font-size: 15px; margin: 0 0 12px; font-weight: 700; }
-.key-card fieldset { border: 0; margin: 0 0 10px; padding: 0; }
-.key-card legend { font-weight: 700; padding: 0; margin-bottom: 2px; }
-.key-card label { display: flex; align-items: flex-start; gap: 7px; padding: 3px 0; cursor: pointer; line-height: 1.3; }
-.key-card input[type=checkbox] { accent-color: var(--ink); margin: 2px 0 0; width: 15px; height: 15px; flex: none; }
-.swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 1px solid rgba(0,0,0,.45); margin-top: 3px; flex: none; }
-.swatch.sq { border-radius: 0; }
-.swatch.line { width: 18px; height: 0; border: 0; border-top: 2px dashed var(--c-rail); border-radius: 0; margin-top: 9px; }
-.swatch.ramp { width: 26px; height: 11px; border-radius: 0; background: linear-gradient(90deg, #f1e3c4, #b06a3a, #5a2414); }
-.outcomes { margin: 0; padding: 0; list-style: none; }
-.outcomes li { display: flex; gap: 7px; align-items: flex-start; padding: 1px 0 1px 22px; line-height: 1.3; }
+/* map controls & popups */
+.basemap-ctl { display: flex; background: #fff; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,.1); overflow: hidden; }
+.basemap-ctl button { border: 0; background: #fff; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.basemap-ctl button + button { border-left: 1px solid var(--rule); }
+.basemap-ctl button[aria-pressed="true"], .basemap-ctl button[aria-pressed="true"]:not(:disabled):hover { background: var(--blue); color: #fff; }
+.maplibregl-popup-content { font-family: inherit; font-size: 14px; line-height: 1.4; padding: 10px 14px 10px 12px; border-radius: 4px; max-width: 290px; }
+.pop h4 { margin: 0 22px 4px 0; font-size: 15px; }
+.pop dl { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 6px 0 0; font-size: 13px; }
+.pop dt { color: var(--muted); }
+.pop dd { margin: 0; }
+.pop .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.maplibregl-popup-close-button { font-size: 18px; padding: 2px 7px; }
+.loading { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: #fff; padding: 6px 12px; border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2); font-size: 13px; z-index: 2; }
 
-/* ---------- divider tabs + printout ---------- */
-.records { margin-top: 40px; }
-.dividers { display: flex; gap: 4px; align-items: flex-end; padding-left: 10px; flex-wrap: wrap; }
-.dividers button {
-  font: inherit; font-size: 15px; color: var(--ink); cursor: pointer;
-  background: linear-gradient(180deg, #e1cb8d, #cdb46e);
-  border: 0; border-radius: 7px 7px 0 0;
-  padding: 7px 12px 6px;
-  box-shadow: 0 -1px 2px rgba(0,0,0,.15) inset;
-  position: relative; top: 3px;
-}
-.dividers button span {
-  display: inline-block; background: var(--bond); padding: 1px 8px; border: 1px solid rgba(255,255,255,.7);
-  box-shadow: 0 0 0 1px rgba(0,0,0,.12);
-}
-.dividers button[aria-selected="true"] { background: linear-gradient(180deg, #f0dda6, var(--manila)); top: 0; padding-bottom: 9px; z-index: 2; box-shadow: none; }
+/* about dialog */
+dialog { max-width: 680px; width: calc(100% - 32px); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 0; }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+.dlg { padding: 20px 22px 18px; max-height: 80vh; overflow-y: auto; }
+.dlg h2 { margin-bottom: 10px; }
+.dlg h3 { color: var(--ink); font-size: 15px; margin: 18px 0 6px; }
+.dlg ul { margin: 0 0 10px; padding-left: 20px; }
+.dlg li { margin: 3px 0; }
+.dlg-close { float: right; border: 1px solid var(--rule-strong); background: #fff; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
 
-.controls {
-  background: var(--manila);
-  padding: 12px 14px 12px;
-  display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: baseline;
-  box-shadow: 0 6px 10px rgba(0,0,0,.25);
+@media (max-width: 760px) {
+  header { gap: 10px; padding: 0 10px; }
+  .brand span { display: none; }
+  nav.tabs button { padding: 0 8px; font-size: 14px; white-space: nowrap; }
+  .app { display: flex; flex-direction: column-reverse; height: auto; }
+  #map { height: 56vh; height: 56dvh; flex: none; }
+  aside { border-right: 0; border-top: 1px solid var(--rule); overflow: visible; }
 }
-.field { display: flex; align-items: baseline; gap: 8px; font-size: 15px; }
-.field select, .field input {
-  font: inherit; font-size: 15px; color: var(--ink); background: transparent;
-  border: 0; border-bottom: 1.5px solid var(--ink); border-radius: 0; padding: 1px 2px; min-width: 0;
+@media (max-width: 420px) {
+  .brand { font-size: 15px; }
+  nav.tabs .wide { display: none; }
 }
-.field input { width: min(260px, 52vw); }
-.field select { max-width: 52vw; }
-
-.printout {
-  position: relative;
-  padding: 0 32px;
-  background:
-    radial-gradient(circle at 16px 12px, var(--blotter) 0 5.5px, transparent 6px) left top / 32px 24px repeat-y,
-    radial-gradient(circle at 16px 12px, var(--blotter) 0 5.5px, transparent 6px) right top / 32px 24px repeat-y,
-    var(--bond);
-  box-shadow: 0 6px 12px rgba(0,0,0,.35);
-}
-.printout-inner { border-left: 1px dashed #b7b7ae; border-right: 1px dashed #b7b7ae; background: #fff; }
-.runhead { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 18px; padding: 12px 12px 8px; font-size: 13.5px; border-bottom: 1px solid #9fb59a; }
-.scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 24px; }
-th, td { padding: 0 10px; text-align: left; white-space: nowrap; vertical-align: top; }
-th { font-weight: 700; border-bottom: 1px dashed #9fb59a; }
-td.wrap { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
-tbody tr:nth-child(6n+1), tbody tr:nth-child(6n+2), tbody tr:nth-child(6n+3) { background: var(--greenbar); }
-td a { color: var(--ink); }
-.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; border: 1px solid rgba(0,0,0,.4); vertical-align: 0; }
-.feed { padding: 10px 12px 14px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; font-size: 14px; border-top: 1px dashed #9fb59a; }
-.feed button { font: inherit; font-size: 14px; color: var(--ink); background: var(--manila); border: 1px solid var(--manila-edge); padding: 3px 10px; cursor: pointer; box-shadow: 0 1px 1px rgba(0,0,0,.2); }
-.feed button:active { transform: translateY(1px); box-shadow: none; }
-
-/* ---------- memo ---------- */
-.memo {
-  margin: 40px auto 0;
-  max-width: 760px;
-  background: var(--bond);
-  padding: 34px clamp(18px, 5vw, 56px) 34px;
-  box-shadow: 0 6px 14px rgba(0,0,0,.38);
-  font-size: 15.5px;
-  line-height: 1.6;
-}
-.memo h2 { font-family: var(--worn); font-weight: 400; font-size: 26px; letter-spacing: 3px; margin: 0 0 16px; text-align: center; }
-.memo dl { display: grid; grid-template-columns: 5.5em 1fr; margin: 0 0 18px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
-.memo dt { font-weight: 700; }
-.memo dd { margin: 0; }
-.memo p { margin: 0 0 14px; max-width: 68ch; }
-.memo .encl { margin-top: 20px; display: grid; grid-template-columns: 5.5em 1fr; }
-.memo .encl ul { margin: 0; padding: 0; list-style: none; }
-.memo .cc { margin-top: 12px; display: grid; grid-template-columns: 5.5em 1fr; font-size: 14px; color: var(--ink-soft); }
-.memo .cc ul { margin: 0; padding: 0; list-style: none; }
-
-/* ---------- index-card popups ---------- */
-.leaflet-container { font-family: var(--type); }
-.leaflet-popup-content-wrapper {
-  border-radius: 1px;
-  background-color: var(--bond);
-  background-image: linear-gradient(transparent 27px, #d65b5b 27px 28px, transparent 28px),
-    linear-gradient(var(--bond) 0 28px, transparent 28px),
-    repeating-linear-gradient(transparent 0 19px, #c3d6ee 19px 20px);
-  background-position: 0 0, 0 0, 0 31px;
-  box-shadow: 0 3px 8px rgba(0,0,0,.35);
-  color: var(--ink);
-}
-.leaflet-popup-tip { background: var(--bond); }
-.leaflet-popup-content { margin: 6px 14px 10px; font-size: 13.5px; line-height: 20px; }
-.leaflet-popup-content .t { font-weight: 700; display: block; min-height: 22px; margin-bottom: 0; }
-.leaflet-popup-content .s { color: var(--ink-soft); }
-.leaflet-container a.leaflet-popup-close-button { color: var(--ink); }
-.leaflet-bar a { background: var(--manila); color: var(--ink); border-color: var(--manila-edge); font-family: var(--type); }
-.leaflet-control-attribution { background: rgba(251,251,247,.85) !important; font-family: var(--type); font-size: 11px; }
-
-@media (max-width: 860px) {
-  .hero, .evidence { grid-template-columns: 1fr; }
-  .hero .tape { margin-top: 4px; max-width: 420px; }
-  .tape ol { display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; }
-  .tape li:nth-last-child(2) { border-bottom: 0; }
-}
-@media (max-width: 600px) {
-  body { font-size: 15px; }
-  .blotter { padding: 16px 16px 26px; margin-top: 10px; }
-  .blotter::before { inset: 5px; }
-  .folder { padding: 22px 14px 22px; }
-  .stamp { right: 10px; top: 12px; padding: 3px 8px 4px; }
-  .stamp span { font-size: 11px; letter-spacing: 1px; }
-  h1 { max-width: 12ch; padding-right: 0; margin-top: 64px; }
-  #map { height: 58vh; min-height: 320px; }
-  .mapsheet::before, .mapsheet::after { width: 70px; }
-  .printout { padding: 0 20px; background-size: 20px 24px, 20px 24px, auto;
-    background-image: radial-gradient(circle at 10px 12px, var(--blotter) 0 4px, transparent 4.5px), radial-gradient(circle at 10px 12px, var(--blotter) 0 4px, transparent 4.5px); }
-  .dividers button { font-size: 14px; padding: 6px 8px 5px; }
-}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
-<main class="blotter">
+<header>
+  <div class="brand">VAP archive <span>· NJ &amp; Northeast</span></div>
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-nj" aria-selected="true" aria-controls="pane-nj">NJ records</button>
+    <button role="tab" id="tab-ne" aria-selected="false" aria-controls="pane-ne">Northeast<span class="wide"> places</span></button>
+  </nav>
+  <button class="about-link" id="open-about" type="button">About</button>
+</header>
 
-  <section class="folder" aria-labelledby="title">
-    <div class="label-strip" aria-hidden="true">N.J. VAP file, 2025–26</div>
-    <div class="stamp" aria-hidden="true"><b>ARCHIVED</b><span>OCT 1 2026</span></div>
-    <div class="hero">
-      <div>
-    <h1 id="title">NJ Vacant &amp; Abandoned Property Records</h1>
-    <p class="file-no">Records requests to New Jersey towns, 2025–2026, and what came back.</p>
-    <div class="notice">
-      <p>Archived October 1, 2026. Snapshot of NJ vacant &amp; abandoned property records obtained via OPRA. Not maintained. Being on a list doesn't mean a property is currently vacant; don't trespass.</p>
-      <p>The other places on the map come from open map data and educated guesses. Most are private land, many are unsafe, and brownfields can be contaminated.</p>
-    </div>
-      </div>
-      <div class="tape" aria-label="Totals">
-        <div class="head">VAP archive totals</div>
-        <ol>
-          <li><span class="n" id="t-req">…</span><span class="key">#</span><span class="what">requests sent</span></li>
-          <li><span class="n" id="t-ans">…</span><span class="key">#</span><span class="what">got a reply</span></li>
-          <li><span class="n" id="t-prop">…</span><span class="key">#</span><span class="what">listed properties</span></li>
-          <li><span class="n" id="t-place">…</span><span class="key">#</span><span class="what">other places</span></li>
-        </ol>
-      </div>
-    </div>
+<div class="app">
+  <aside>
+    <section class="pane" id="pane-nj" role="tabpanel" aria-labelledby="tab-nj">
+      <h2>NJ vacant &amp; abandoned property records</h2>
+      <p class="note">Archived October 1, 2026. Snapshot of NJ vacant &amp; abandoned property records obtained via OPRA. Not maintained. Being on a list doesn't mean a property is currently vacant; don't trespass.</p>
+      <p class="lede" id="nj-summary">Loading…</p>
 
-    <div class="evidence">
-      <div>
-        <div class="mapsheet">
-          <div id="map" role="region" aria-label="Map of requests, listed properties and other places"></div>
-        </div>
-        <p class="caption">Tap a dot for its card. Use the key to switch layers on and off.</p>
-      </div>
-      <div>
-        <form class="key-card" id="key" aria-label="Map key and layers">
-          <h2>Key</h2>
-          <fieldset>
-            <legend>Requests, by town</legend>
-            <label><input type="checkbox" data-layer="req" checked>Show town dots, colored by how they answered</label>
-            <ul class="outcomes" id="outcomes"></ul>
-          </fieldset>
-          <fieldset>
-            <legend>From the OPRA lists</legend>
-            <label><input type="checkbox" data-layer="prop" checked><span class="swatch" style="background:var(--c-prop)"></span>Listed property</label>
-          </fieldset>
-          <fieldset>
-            <legend>Other places</legend>
-            <label><input type="checkbox" data-layer="mapped" checked><span class="swatch sq" style="background:var(--c-place)"></span>A public source says abandoned, disused or ruined</label>
-            <label><input type="checkbox" data-layer="inferred" checked><span class="swatch sq" style="background:var(--c-guess)"></span>Our guess: idle towers, old military sites</label>
-            <label><input type="checkbox" data-layer="rail" checked><span class="swatch line"></span>Abandoned rail line</label>
-            <label><input type="checkbox" data-layer="tracts"><span class="swatch ramp"></span>Share of homes "other vacant" (census)</label>
-          </fieldset>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <section class="records" aria-label="Records">
-    <div class="dividers" role="tablist">
-      <button role="tab" id="tab-prop" aria-selected="true"><span>Listed properties</span></button>
-      <button role="tab" id="tab-place" aria-selected="false"><span>Other places</span></button>
-      <button role="tab" id="tab-req" aria-selected="false"><span>Requests</span></button>
-    </div>
-    <div class="controls">
-      <label class="field">County <select id="county"><option value="">all</option></select></label>
-      <label class="field">Look up <input type="search" id="q" placeholder="town, address or name"></label>
-    </div>
-    <div class="printout">
-      <div class="printout-inner">
-        <div class="runhead"><span id="rh-title">OPRA property listing</span><span>Run 10/01/26</span><span id="rh-count"></span></div>
-        <div class="scroll"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
-        <div class="feed" id="feed"></div>
-      </div>
-    </div>
-  </section>
-
-  <article class="memo" aria-labelledby="memo-h">
-    <h2 id="memo-h">MEMORANDUM</h2>
-    <dl>
-      <dt>To:</dt><dd>Whoever opens this folder</dd>
-      <dt>From:</dt><dd>myceliation</dd>
-      <dt>Date:</dt><dd>October 1, 2026</dd>
-      <dt>Re:</dt><dd>How these records were gathered</dd>
-    </dl>
-    <p>Requests went to New Jersey municipal clerks in two rounds: by hand in spring 2025, mostly to South Jersey towns, and by automated email to nearly every town in May and June 2026. They asked for vacant, abandoned or foreclosed property registries, unsafe-structure orders, and long-term water shutoffs. Each town's dot shows how its most recent request was answered.</p>
-    <p>Lists that came back as spreadsheets, PDFs or email text were typed into one table, block and lot were cleaned up, and each property was placed on its tax parcel from the statewide NJOGIS layer, with the Census geocoder as a fallback. Owner names, contacts and correspondence were left out, and so were homes the lists themselves marked as lived in.</p>
-    <p>The other places come from OpenStreetMap features tagged abandoned, disused or ruined, from Wikidata entries marked closed or decommissioned, and from a few guesses. A tower is a guess when the FCC terminated its registration with no dismantle notice on file, or when nobody has touched its registration in twenty years. A military site is a guess because many Nike bases and coastal batteries are parks now. The census layer shades each tract by its share of homes the Census Bureau counts as vacant for reasons other than rent, sale or seasonal use, which is where long-empty houses show up.</p>
-    <p>Treat every entry as a lead, not a fact about today.</p>
-    <div class="encl"><b>Encl.:</b>
-      <ul>
-        <li><a href="data/properties.csv" download>properties.csv</a>, listed properties</li>
-        <li><a href="data/requests.csv" download>requests.csv</a>, one row per request</li>
-        <li><a href="data/places.csv" download>places.csv</a>, other places</li>
-        <li><a href="data/properties.geojson" download>properties.geojson</a>, <a href="data/places.geojson" download>places.geojson</a>, <a href="data/rail.geojson" download>rail.geojson</a>, <a href="data/vacancy_tracts.geojson" download>vacancy_tracts.geojson</a></li>
+      <h3>Layers</h3>
+      <ul class="checks">
+        <li><label><input type="checkbox" data-nj="req" checked>How each town answered</label></li>
       </ul>
-    </div>
-    <div class="cc"><b>cc:</b>
-      <ul>
-        <li>OpenStreetMap contributors, map tiles and the places and rail layers (ODbL)</li>
-        <li>NJOGIS, parcels and municipal boundaries</li>
-        <li>Wikidata (CC0), FCC Antenna Structure Registration, U.S. Census Bureau ACS 2018–2022</li>
-        <li>Records data CC0, code MIT, <a href="https://github.com/myceliation/vap">source on GitHub</a></li>
+      <ul class="sublegend" id="outcome-legend"></ul>
+      <ul class="checks">
+        <li><label><input type="checkbox" data-nj="prop" checked><span class="sw" style="background:#9467bd"></span>Listed properties</label><span class="count" id="n-prop"></span></li>
+        <li><label><input type="checkbox" data-nj="tracts"><span class="sw ramp"></span>Homes vacant for other reasons (census)</label></li>
       </ul>
-    </div>
-  </article>
-</main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+      <div class="seg" role="group" aria-label="List">
+        <button type="button" id="nj-list-prop" aria-pressed="true">Properties</button>
+        <button type="button" id="nj-list-req" aria-pressed="false">Requests</button>
+      </div>
+      <label class="field"><span>County</span><select id="nj-county"><option value="">All counties</option></select></label>
+      <label class="field"><span>Search</span><input type="search" id="nj-q" placeholder="Town or address"></label>
+      <p class="small" id="nj-count"></p>
+      <ul class="results" id="nj-results"></ul>
+      <div class="more" id="nj-more"></div>
+      <p class="dl">Download: <a href="data/properties.csv" download>properties.csv</a><a href="data/requests.csv" download>requests.csv</a><a href="data/properties.geojson" download>properties.geojson</a><a href="data/vacancy_tracts.geojson" download>tracts.geojson</a></p>
+    </section>
+
+    <section class="pane" id="pane-ne" role="tabpanel" aria-labelledby="tab-ne" hidden>
+      <h2>Abandoned &amp; closed places, Northeast</h2>
+      <p class="lede" id="ne-summary">Maryland to Maine, Quebec and the Maritimes.</p>
+      <p class="note">Most of these are private land. Mine openings, ruins and brownfields can be deadly or contaminated, and some places are gone. Check before you go, and don't trespass.</p>
+
+      <label class="field"><span>Go to</span><select id="ne-region"><option value="">Whole region</option></select></label>
+
+      <h3>Categories</h3>
+      <div class="cat-actions"><button class="linkish" type="button" id="cats-all">All</button><button class="linkish" type="button" id="cats-none">None</button></div>
+      <ul class="checks" id="ne-cats"></ul>
+
+      <h3>Show</h3>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="ne-guess" checked><span class="sw ring" style="color:#555"></span>Guesses too (idle towers, prospects, military sites)</label></li>
+        <li><label><input type="checkbox" id="ne-rail"><span class="sw line"></span>Abandoned rail lines</label></li>
+      </ul>
+
+      <label class="field"><span>Search</span><input type="search" id="ne-q" placeholder="Name, type or source"></label>
+      <p class="small" id="ne-count">Pan or zoom the map to list places in view.</p>
+      <ul class="results" id="ne-results"></ul>
+      <div class="more" id="ne-more"></div>
+      <p class="dl">Download: <a href="data/ne/places.csv" download>places.csv</a><a href="data/ne/places.json" download>places.json</a><a href="data/ne/rail.json" download>rail.json</a></p>
+    </section>
+  </aside>
+  <div id="map" role="region" aria-label="Map"><div class="loading" id="loading">Loading map…</div></div>
+</div>
+
+<dialog id="about" aria-labelledby="about-h">
+  <div class="dlg">
+    <button class="dlg-close" type="button" id="close-about">Close</button>
+    <h2 id="about-h">About this map</h2>
+    <h3>NJ records</h3>
+    <p>Records requests under New Jersey's Open Public Records Act went to municipal clerks in two rounds: by hand in spring 2025, mostly to South Jersey, and by email to nearly every town in May and June 2026. They asked for vacant, abandoned or foreclosed property registries, unsafe-structure orders and long-term water shutoffs. Town dots show how the most recent request was answered.</p>
+    <p>Lists that came back were combined into one table, block and lot were cleaned up, and each property was placed on its tax parcel from the statewide NJOGIS layer, with the Census geocoder as a fallback. Owner names, contacts and correspondence were left out, and so were homes the lists themselves marked as lived in.</p>
+    <p>The census layer shades each tract by the share of homes vacant for reasons other than rent, sale or seasonal use. That excludes summer homes, so it's the closest census measure to long-empty houses.</p>
+    <h3>Northeast places</h3>
+    <ul>
+      <li><b>OpenStreetMap:</b> features tagged abandoned, disused or ruined, brownfields, historic mines and mine openings, wrecks, forts and bunkers, vacant storefronts, and abandoned rail lines.</li>
+      <li><b>Wikidata:</b> places recorded as permanently closed, decommissioned or abandoned, plus ghost towns and ruins. Demolished places are left out.</li>
+      <li><b>USGS Mineral Resources Data System:</b> past-producing mines, plus prospects as guesses.</li>
+      <li><b>MSHA:</b> mines listed as abandoned, or abandoned and sealed.</li>
+      <li><b>Quebec MRNF:</b> orphaned and abandoned mine sites.</li>
+      <li><b>Nova Scotia DNRR:</b> abandoned mine openings, with hazard ratings and a link to each report.</li>
+      <li><b>FCC Antenna Structure Registration (guesses):</b> towers 30 m and taller whose registration was terminated with no dismantle notice, or hasn't been touched since 2006 or earlier.</li>
+    </ul>
+    <p>Hollow rings are guesses. Everything else is something a public source says is abandoned, closed, disused, ruined or no longer producing. Sources lag reality: some places are reused, restored or demolished.</p>
+    <h3>Sources and licenses</h3>
+    <p class="small">Records data CC0. Places and rail layers contain OpenStreetMap data, © OpenStreetMap contributors, under the ODbL. Quebec data © Gouvernement du Québec, CC BY 4.0. Nova Scotia data under the Nova Scotia Open Government Licence. Wikidata CC0. USGS, MSHA, FCC and Census data are public domain. Basemap: OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors; aerial imagery USGS The National Map (US only). Code MIT. <a href="https://github.com/myceliation/vap">Source on GitHub</a>.</p>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
 <script>
 const OUTCOMES = {
-  fulfilled: 'Sent records', partial: 'Sent part of them', no_records: 'Says it keeps no list',
-  pending: 'Acknowledged, never finished', denied: 'Denied', no_response: 'Never answered'
+  fulfilled: ['Sent records', '#2ca02c'], partial: ['Sent part of them', '#bcbd22'], no_records: ['Keeps no list', '#1f77b4'],
+  pending: ['Acknowledged, never finished', '#ff7f0e'], denied: ['Denied', '#d62728'], no_response: ['Never answered', '#9e9e9e']
 };
-const BASIS = { mapped: 'source says abandoned', inferred: 'our guess' };
-const css = getComputedStyle(document.documentElement);
-const v = n => css.getPropertyValue(n).trim();
-const outColor = o => v('--o-' + o) || '#888';
+const CAT_COLORS = {
+  'Mines & quarries': '#8c564b', 'Ruins': '#9467bd', 'Industrial & power': '#ff7f0e', 'Military & Cold War': '#556b2f',
+  'Rail & transport': '#1f77b4', 'Institutions': '#d62728', 'Leisure & lodging': '#e377c2', 'Towers & masts': '#17becf',
+  'Ghost towns': '#393b79', 'Wrecks': '#2ca02c', 'Brownfields': '#bcbd22', 'Other buildings & sites': '#7f7f7f', 'Closed businesses': '#c49c94'
+};
+const OFF_BY_DEFAULT = new Set(['Closed businesses']);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => Number(n).toLocaleString('en-US');
+const $ = id => document.getElementById(id);
 
 function parseCSV(text) {
   const rows = []; let row = [], cell = '', q = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
-    else if (c === '"') q = true;
-    else if (c === ',') { row.push(cell); cell = ''; }
-    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
-    else if (c !== '\r') cell += c;
+    else if (c === '"') q = true; else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c;
   }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const head = rows.shift();
   return rows.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
 }
 
-const map = L.map('map', { preferCanvas: true }).setView([40.07, -74.55], 8);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-const renderer = L.canvas({ padding: 0.4 });
-map.createPane('tracts'); map.getPane('tracts').style.zIndex = 350;
-const tractRenderer = L.canvas({ padding: 0.4, pane: 'tracts' });
-const layers = { req: L.layerGroup(), prop: L.layerGroup(), mapped: L.layerGroup(), inferred: L.layerGroup(), rail: L.layerGroup(), tracts: L.layerGroup() };
+/* ---------- map ---------- */
+const map = new maplibregl.Map({
+  container: 'map',
+  // OpenFreeMap: free vector tiles from OpenStreetMap, no key needed
+  style: 'https://tiles.openfreemap.org/styles/positron',
+  bounds: [[-75.6, 38.9], [-73.9, 41.36]], fitBoundsOptions: { padding: 16 }, maxZoom: 18, attributionControl: { compact: true }
+});
+map.once('idle', () => { // start with the credits folded into the (i) button so they don't cover the scale bar
+  const a = document.querySelector('.maplibregl-ctrl-attrib.maplibregl-compact');
+  if (a) { a.classList.remove('maplibregl-compact-show'); a.removeAttribute('open'); }
+});
+let LABELS; // first place-label layer: data layers go just under it so town names stay readable
+map.on('load', () => {
+  const ls = map.getStyle().layers, firstSym = (ls.find(l => l.type === 'symbol') || {}).id;
+  LABELS = (ls.find(l => /^(airport|label_)/.test(l.id)) || {}).id || firstSym;
+  map.addSource('usgs', { type: 'raster', tileSize: 256, maxzoom: 16,
+    tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'],
+    attribution: 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">USGS The National Map</a>' });
+  map.addLayer({ id: 'usgs', type: 'raster', source: 'usgs', layout: { visibility: 'none' } }, firstSym);
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: false }), 'top-right');
+map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+class BasemapCtl {
+  onAdd(m) {
+    const el = document.createElement('div'); el.className = 'maplibregl-ctrl basemap-ctl';
+    el.innerHTML = '<button type="button" data-b="map" aria-pressed="true">Map</button><button type="button" data-b="usgs" aria-pressed="false" title="USGS imagery, US only">Aerial</button>';
+    el.addEventListener('click', e => {
+      const b = e.target.dataset.b; if (!b) return;
+      if (m.getLayer('usgs')) m.setLayoutProperty('usgs', 'visibility', b === 'usgs' ? 'visible' : 'none');
+      el.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.b === b));
+    });
+    return el;
+  }
+  onRemove() {}
+}
+map.addControl(new BasemapCtl(), 'top-left');
+const radius = ['interpolate', ['linear'], ['zoom'], 4, 1.8, 8, 3.2, 12, 5.5, 16, 8];
+const G = ['==', ['get', 'g'], 1]; // guesses draw as smaller rings so they don't swamp mapped places
+const neRadius = ['interpolate', ['linear'], ['zoom'], 4, ['case', G, 1.2, 1.8], 8, ['case', G, 2.4, 3.2], 12, ['case', G, 4.5, 5.5], 16, 8];
+let popup = null;
+function showPopup(lngLat, html) {
+  if (popup) popup.remove();
+  popup = new maplibregl.Popup({ maxWidth: '300px', focusAfterOpen: false }).setLngLat(lngLat).setHTML(html).addTo(map);
+}
+const mapReady = new Promise(r => map.on('load', r));
 
-let REQ = [], PROP = [], PLACE = [], CENT = {}, tab = 'prop', shown = 200;
-
+/* ---------- NJ tab ---------- */
+let REQ = [], PROP = [], CENT = {}, njList = 'prop', njShown = 150;
 Promise.all([
-  fetch('data/requests.csv').then(r => r.text()),
-  fetch('data/properties.csv').then(r => r.text()),
-  fetch('data/places.csv').then(r => r.text()),
-  fetch('data/municipalities.json').then(r => r.json())
-]).then(([rq, pr, pl, mu]) => {
-  REQ = parseCSV(rq); PROP = parseCSV(pr); PLACE = parseCSV(pl); CENT = mu;
-  PLACE.sort((a, b) => (!a.name - !b.name) || a.county.localeCompare(b.county) || a.municipality.localeCompare(b.municipality));
-  tape(); drawRail(); drawReqs(); drawPlaces(); drawProps(); outcomeKey(); counties(); render();
-  ['rail', 'req', 'mapped', 'inferred', 'prop'].forEach(k => layers[k].addTo(map));
-});
-
-function tape() {
-  document.getElementById('t-req').textContent = fmt(REQ.length);
-  document.getElementById('t-ans').textContent = fmt(REQ.filter(r => r.outcome !== 'no_response').length);
-  document.getElementById('t-prop').textContent = fmt(PROP.length);
-  document.getElementById('t-place').textContent = fmt(PLACE.length);
-}
-
-function card(title, lines) {
-  return `<span class="t">${esc(title)}</span>` + lines.filter(Boolean).join('<br>');
-}
-
-function drawReqs() {
-  const by = {};
-  REQ.forEach(r => (by[r.muni_code] = by[r.muni_code] || []).push(r));
-  Object.entries(by).forEach(([code, rs]) => {
-    const c = CENT[code]; if (!c) return;
-    rs.sort((a, b) => a.round.localeCompare(b.round));
-    const last = rs[rs.length - 1];
-    const lines = [`<span class="s">${esc(last.county)} County</span>`].concat(rs.map(r =>
-      `<span class="dot" style="background:${outColor(r.outcome)}"></span>${esc(r.round)}: ${esc(OUTCOMES[r.outcome] || r.outcome)}` +
-      (r.request_date ? `<br><span class="s">asked ${esc(r.request_date)}${r.response_date ? `, answered ${esc(r.response_date)} (${esc(r.days_to_response)} days)` : ''}</span>` : '') +
-      (r.n_records ? `<br><span class="s">${esc(r.n_records)} properties on file</span>` : '') +
-      (r.notes ? `<br><span class="s">${esc(r.notes)}</span>` : '')));
-    L.circleMarker([c[1], c[0]], { renderer, radius: 5, weight: 1, color: '#24304d', fillColor: outColor(last.outcome), fillOpacity: .92 })
-      .bindPopup(card(last.municipality, lines), { maxWidth: 280 }).addTo(layers.req);
-  });
-}
-function drawProps() {
-  PROP.forEach(p => {
-    if (!p.lat) return;
-    const bl = p.block ? `block ${esc(p.block)}, lot ${esc(p.lot)}${p.qualifier ? ', ' + esc(p.qualifier) : ''}` : '';
-    L.circleMarker([+p.lat, +p.lon], { renderer, radius: 3.6, weight: .7, color: '#fbfbf7', fillColor: v('--c-prop'), fillOpacity: .95 })
-      .bindPopup(card(p.address || 'no address given', [
-        `<span class="s">${esc(p.municipality)}, ${esc(p.county)} County</span>`, bl,
-        `Listed as: ${esc(p.listed_status)}`, `From: ${esc(p.source_file)}`,
-        `List date: ${esc(p.list_date || 'not stated')}`,
-        p.pogodata_verified ? `Checked on pogodata: ${esc(p.pogodata_verified)}` : '',
-        p.abandonment_score ? `Abandonment call: ${esc(p.abandonment_score)}` : ''
-      ]), { maxWidth: 280 }).addTo(layers.prop);
-  });
-}
-function drawPlaces() {
-  PLACE.forEach(p => {
-    const guess = p.basis === 'inferred';
-    const m = L.circleMarker([+p.lat, +p.lon], { renderer, radius: guess ? 4.4 : 3.8, weight: 1, color: guess ? '#fbfbf7' : '#e6d29c',
-      fillColor: guess ? v('--c-guess') : v('--c-place'), fillOpacity: .9 });
-    m.bindPopup(card(p.name || p.kind || p.category, [
-      `<span class="s">${esc(p.municipality)}, ${esc(p.county)} County</span>`,
-      `${esc(p.category)}${p.kind && p.name ? ', ' + esc(p.kind) : ''}`,
-      `${guess ? 'Our guess' : 'Source says'}: ${esc(p.status)}`,
-      p.note ? esc(p.note) : '',
-      `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.source)} record</a>`
-    ]), { maxWidth: 280 });
-    m.addTo(guess ? layers.inferred : layers.mapped);
-  });
-}
-function drawRail() {
-  fetch('data/rail.geojson').then(r => r.json()).then(g => {
-    L.geoJSON(g, { renderer, style: { color: v('--c-rail'), weight: 1.6, dashArray: '5 4', opacity: .85 },
-      onEachFeature: (f, l) => l.bindPopup(card(f.properties.name || 'Unnamed rail line', [
-        `Tagged ${esc(f.properties.state)} in OpenStreetMap`,
-        `<a href="https://www.openstreetmap.org/${esc(f.properties.osm)}" target="_blank" rel="noopener">OpenStreetMap record</a>`])) }).addTo(layers.rail);
-  });
-}
-let tractsLoaded = false;
-function drawTracts() {
-  if (tractsLoaded) return; tractsLoaded = true;
-  const ramp = p => p == null ? 'transparent' : p >= 8 ? '#5a2414' : p >= 5 ? '#8d3d1c' : p >= 3 ? '#b06a3a' : p >= 1.5 ? '#d6a777' : '#f1e3c4';
-  fetch('data/vacancy_tracts.geojson').then(r => r.json()).then(g => {
-    L.geoJSON(g, { renderer: tractRenderer, pane: 'tracts', style: f => ({ color: '#6b4a2b', weight: .3, fillColor: ramp(f.properties.pct), fillOpacity: .5 }),
-      onEachFeature: (f, l) => { const p = f.properties; l.bindPopup(card(`Census tract ${p.geoid}`, [
-        `${fmt(p.other_vacant)} of ${fmt(p.units)} homes "other vacant" (${p.pct ?? 0}%)`,
-        `<span class="s">margin of error ±${fmt(p.moe ?? 0)}; seasonal homes (${fmt(p.seasonal)}) not counted</span>`])); } })
-      .addTo(layers.tracts);
-  });
-}
-document.getElementById('key').addEventListener('change', e => {
-  const k = e.target.dataset.layer; if (!k) return;
-  if (k === 'tracts' && e.target.checked) drawTracts();
-  e.target.checked ? layers[k].addTo(map) : map.removeLayer(layers[k]);
-});
-
-function outcomeKey() {
+  fetch('data/requests.csv').then(r => r.text()), fetch('data/properties.csv').then(r => r.text()),
+  fetch('data/municipalities.json').then(r => r.json()), mapReady
+]).then(([rq, pr, mu]) => {
+  REQ = parseCSV(rq); PROP = parseCSV(pr); CENT = mu;
   const latest = {};
   REQ.forEach(r => { if (!latest[r.muni_code] || latest[r.muni_code].round < r.round) latest[r.muni_code] = r; });
-  const n = {}; Object.values(latest).forEach(r => n[r.outcome] = (n[r.outcome] || 0) + 1);
-  document.getElementById('outcomes').innerHTML = Object.keys(OUTCOMES).map(o =>
-    `<li><span class="swatch" style="background:${outColor(o)}"></span>${OUTCOMES[o]} (${n[o] || 0})</li>`).join('');
-}
-function counties() {
-  const set = [...new Set([...REQ, ...PROP, ...PLACE].map(r => r.county))].filter(Boolean).sort();
-  const sel = document.getElementById('county');
-  set.forEach(c => sel.insertAdjacentHTML('beforeend', `<option>${esc(c)}</option>`));
-}
+  const byMuni = {}; REQ.forEach(r => (byMuni[r.muni_code] = byMuni[r.muni_code] || []).push(r));
+  const reqFeats = Object.values(latest).filter(r => CENT[r.muni_code]).map(r => ({ type: 'Feature',
+    geometry: { type: 'Point', coordinates: CENT[r.muni_code] }, properties: { code: r.muni_code, o: r.outcome } }));
+  const propFeats = PROP.map((p, i) => p.lat ? { type: 'Feature', geometry: { type: 'Point', coordinates: [+p.lon, +p.lat] }, properties: { i } } : null).filter(Boolean);
+  map.addSource('nj-req', { type: 'geojson', data: { type: 'FeatureCollection', features: reqFeats } });
+  map.addSource('nj-prop', { type: 'geojson', data: { type: 'FeatureCollection', features: propFeats } });
+  map.addLayer({ id: 'nj-req', type: 'circle', source: 'nj-req', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 7, 14, 9],
+    'circle-color': ['match', ['get', 'o'], ...Object.entries(OUTCOMES).flatMap(([k, v]) => [k, v[1]]), '#999'],
+    'circle-stroke-color': '#fff', 'circle-stroke-width': 1.2 } }, LABELS);
+  map.addLayer({ id: 'nj-prop', type: 'circle', source: 'nj-prop', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 2.2, 10, 3.8, 14, 6.5],
+    'circle-color': '#9467bd', 'circle-stroke-color': '#fff', 'circle-stroke-width': 0.8 } }, LABELS);
+  map.on('click', 'nj-req', e => showPopup(e.lngLat, reqPopup(byMuni[e.features[0].properties.code])));
+  map.on('click', 'nj-prop', e => showPopup(e.lngLat, propPopup(PROP[e.features[0].properties.i])));
+  ['nj-req', 'nj-prop'].forEach(l => { map.on('mouseenter', l, () => map.getCanvas().style.cursor = 'pointer'); map.on('mouseleave', l, () => map.getCanvas().style.cursor = ''); });
 
-const VIEWS = {
-  prop: { title: 'OPRA property listing', data: () => PROP, search: r => r.municipality + ' ' + r.address,
-    cols: [['municipality', 'Town'], ['address', 'Address'], ['block', 'Block'], ['lot', 'Lot'], ['listed_status', 'Listed as', 'wrap'], ['list_date', 'List date'], ['round', 'Round']] },
-  place: { title: 'Other places', data: () => PLACE, search: r => r.municipality + ' ' + r.name + ' ' + r.kind + ' ' + r.category,
-    cols: [['municipality', 'Town'], ['name', 'Name'], ['what', 'What'], ['basis', 'Basis'], ['status', 'Status', 'wrap'], ['source', 'Source']] },
-  req: { title: 'Request ledger', data: () => REQ, search: r => r.municipality + ' ' + r.notes,
-    cols: [['municipality', 'Town'], ['county', 'County'], ['round', 'Round'], ['outcome', 'Answer'], ['request_date', 'Asked'], ['response_date', 'Answered'], ['days_to_response', 'Days'], ['n_records', 'Properties'], ['notes', 'Notes', 'wrap']] }
-};
-function cell(r, k) {
-  if (k === 'outcome') return `<span class="dot" style="background:${outColor(r[k])}"></span>${esc(OUTCOMES[r[k]] || r[k])}`;
-  if (k === 'basis') return esc(BASIS[r[k]] || r[k]);
-  if (k === 'what') return esc(r.kind && r.kind.toLowerCase() !== r.category.toLowerCase() ? `${r.category}, ${r.kind}` : r.category);
-  if (k === 'source' && r.link) return `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r[k])}</a>`;
-  return esc(r[k]);
-}
-function render() {
-  const view = VIEWS[tab];
-  const county = document.getElementById('county').value;
-  const q = document.getElementById('q').value.trim().toLowerCase();
-  const rows = view.data().filter(r => (!county || r.county === county) && (!q || view.search(r).toLowerCase().includes(q)));
-  document.getElementById('rh-title').textContent = view.title + (county ? `, ${county} County` : '');
-  document.getElementById('rh-count').textContent = `${fmt(rows.length)} lines`;
-  document.getElementById('thead').innerHTML = '<tr>' + view.cols.map(c => `<th scope="col">${c[1]}</th>`).join('') + '</tr>';
-  document.getElementById('tbody').innerHTML = rows.slice(0, shown).map(r =>
-    '<tr>' + view.cols.map(([k, , w]) => `<td${w ? ` class="wrap" title="${esc(r[k])}"` : ''}>${cell(r, k)}</td>`).join('') + '</tr>').join('');
-  const feed = document.getElementById('feed');
-  feed.innerHTML = rows.length > shown
-    ? `<span>Printed ${fmt(shown)} of ${fmt(rows.length)} lines.</span><button type="button" id="more">Print 400 more</button>`
-    : `<span>End of listing.</span>`;
-  const b = document.getElementById('more'); if (b) b.onclick = () => { shown += 400; render(); };
-}
-document.getElementById('county').onchange = () => { shown = 200; render(); };
-document.getElementById('q').oninput = () => { shown = 200; render(); };
-Object.keys(VIEWS).forEach(t => document.getElementById('tab-' + t).onclick = () => {
-  tab = t; shown = 200;
-  Object.keys(VIEWS).forEach(x => document.getElementById('tab-' + x).setAttribute('aria-selected', x === t));
-  render();
+  const n = {}; Object.values(latest).forEach(r => n[r.outcome] = (n[r.outcome] || 0) + 1);
+  $('outcome-legend').innerHTML = Object.entries(OUTCOMES).map(([k, v]) => `<li><span class="sw" style="background:${v[1]}"></span>${v[0]} (${n[k] || 0})</li>`).join('');
+  const answered = REQ.filter(r => r.outcome !== 'no_response').length;
+  $('nj-summary').textContent = `${fmt(REQ.length)} requests to ${fmt(Object.keys(latest).length)} towns; ${fmt(answered)} got a reply. ${fmt(PROP.length)} properties came back on the lists.`;
+  $('n-prop').textContent = fmt(PROP.length);
+  [...new Set([...REQ, ...PROP].map(r => r.county))].filter(Boolean).sort().forEach(c => $('nj-county').insertAdjacentHTML('beforeend', `<option>${esc(c)}</option>`));
+  $('loading').hidden = true;
+  renderNJ();
 });
+function reqPopup(rs) {
+  rs = [...rs].sort((a, b) => a.round.localeCompare(b.round));
+  return `<div class="pop"><h4>${esc(rs[0].municipality)}</h4><div class="small">${esc(rs[0].county)} County</div>` + rs.map(r =>
+    `<dl><dt>${esc(r.round)}</dt><dd><span class="tag"><span class="sw" style="background:${OUTCOMES[r.outcome][1]}"></span>${esc(OUTCOMES[r.outcome][0])}</span></dd>` +
+    (r.request_date ? `<dt>Asked</dt><dd>${esc(r.request_date)}</dd>` : '') +
+    (r.response_date ? `<dt>Answered</dt><dd>${esc(r.response_date)} (${esc(r.days_to_response)} days)</dd>` : '') +
+    (r.n_records ? `<dt>Listed</dt><dd>${esc(r.n_records)} properties</dd>` : '') +
+    (r.notes ? `<dt>Note</dt><dd>${esc(r.notes)}</dd>` : '') + '</dl>').join('') + '</div>';
+}
+function propPopup(p) {
+  return `<div class="pop"><h4>${esc(p.address || (p.block ? `Block ${p.block}, lot ${p.lot}` : 'No address given'))}</h4><div class="small">${esc(p.municipality)}, ${esc(p.county)} County</div><dl>` +
+    (p.block ? `<dt>Block/lot</dt><dd>${esc(p.block)} / ${esc(p.lot)}${p.qualifier ? ' / ' + esc(p.qualifier) : ''}</dd>` : '') +
+    `<dt>Listed as</dt><dd>${esc(p.listed_status)}</dd><dt>List date</dt><dd>${esc(p.list_date || 'not stated')}</dd>` +
+    `<dt>Source</dt><dd>${esc(p.source_file)}</dd>` + (p.abandonment_score ? `<dt>Call</dt><dd>${esc(p.abandonment_score)}</dd>` : '') + '</dl></div>';
+}
+function renderNJ() {
+  const county = $('nj-county').value, q = $('nj-q').value.trim().toLowerCase();
+  const data = njList === 'prop' ? PROP : REQ;
+  const rows = data.filter(r => (!county || r.county === county) &&
+    (!q || `${r.municipality} ${r.address || ''} ${r.notes || ''}`.toLowerCase().includes(q)));
+  if (njList === 'prop') rows.sort((a, b) => a.municipality.localeCompare(b.municipality) || (!a.lat) - (!b.lat) || (!a.address) - (!b.address));
+  $('nj-count').textContent = `${fmt(rows.length)} ${njList === 'prop' ? 'properties' : 'requests'}`;
+  $('nj-results').innerHTML = rows.slice(0, njShown).map(r => {
+    const idx = data.indexOf(r);
+    if (njList === 'prop') return `<li><button type="button" data-p="${idx}"${r.lat ? '' : ' disabled title="No map point"'}><span class="sw" style="background:#9467bd"></span><span class="t">${esc(r.address || (r.block ? `Block ${r.block}, lot ${r.lot}` : 'No address'))}</span><span class="s">${esc(r.municipality)} · ${esc(r.listed_status)}</span></button></li>`;
+    const o = OUTCOMES[r.outcome];
+    return `<li><button type="button" data-r="${idx}"><span class="sw" style="background:${o[1]}"></span><span class="t">${esc(r.municipality)}</span><span class="s">${esc(r.round)} round: ${esc(o[0])}${r.n_records ? `, ${esc(r.n_records)} properties` : ''}</span></button></li>`;
+  }).join('');
+  $('nj-more').innerHTML = rows.length > njShown ? `<button type="button" id="nj-more-btn">Show ${Math.min(300, rows.length - njShown)} more</button>` : '';
+  const mb = $('nj-more-btn'); if (mb) mb.onclick = () => { njShown += 300; renderNJ(); };
+}
+$('nj-results').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.p) { const p = PROP[+b.dataset.p]; if (!p.lat) return; map.flyTo({ center: [+p.lon, +p.lat], zoom: 16 }); showPopup([+p.lon, +p.lat], propPopup(p)); }
+  if (b.dataset.r) { const r = REQ[+b.dataset.r], c = CENT[r.muni_code]; if (!c) return;
+    map.flyTo({ center: c, zoom: 12 }); showPopup(c, reqPopup(REQ.filter(x => x.muni_code === r.muni_code))); }
+});
+$('nj-county').onchange = $('nj-q').oninput = () => { njShown = 150; renderNJ(); };
+['prop', 'req'].forEach(k => $('nj-list-' + k).onclick = () => {
+  njList = k; njShown = 150;
+  $('nj-list-prop').setAttribute('aria-pressed', k === 'prop'); $('nj-list-req').setAttribute('aria-pressed', k === 'req');
+  renderNJ();
+});
+document.querySelectorAll('[data-nj]').forEach(cb => cb.onchange = () => {
+  const k = cb.dataset.nj;
+  if (k === 'tracts' && cb.checked && !map.getSource('nj-tracts')) {
+    map.addSource('nj-tracts', { type: 'geojson', data: 'data/vacancy_tracts.geojson' });
+    map.addLayer({ id: 'nj-tracts', type: 'fill', source: 'nj-tracts', paint: {
+      'fill-color': ['step', ['coalesce', ['get', 'pct'], 0], '#fff5eb', 1.5, '#fdd9b5', 3, '#fd8d3c', 5, '#e6550d', 8, '#7f2704'],
+      'fill-opacity': 0.55, 'fill-outline-color': 'rgba(127,39,4,.25)' } }, 'nj-req');
+    map.on('click', 'nj-tracts', e => { if (map.queryRenderedFeatures(e.point, { layers: ['nj-req', 'nj-prop'] }).length) return;
+      const p = e.features[0].properties;
+      showPopup(e.lngLat, `<div class="pop"><h4>Census tract ${esc(p.geoid)}</h4><dl><dt>Other vacant</dt><dd>${fmt(p.other_vacant)} of ${fmt(p.units)} homes (${p.pct ?? 0}%)</dd><dt>Margin</dt><dd>±${fmt(p.moe ?? 0)}</dd><dt>Seasonal</dt><dd>${fmt(p.seasonal)} (not counted)</dd></dl></div>`); });
+    return;
+  }
+  if (map.getLayer('nj-' + k)) map.setLayoutProperty('nj-' + k, 'visibility', cb.checked ? 'visible' : 'none');
+});
+
+/* ---------- Northeast tab ---------- */
+let NE = null, neFeats = [], neShown = 120, neLoading = null, activeCats = null;
+function loadNE() {
+  if (neLoading) return neLoading;
+  $('loading').textContent = 'Loading Northeast places…'; $('loading').hidden = false;
+  neLoading = Promise.all([fetch('data/ne/places.json').then(r => r.json()), mapReady]).then(([d]) => {
+    NE = d;
+    activeCats = new Set(d.cats.filter(c => !OFF_BY_DEFAULT.has(c)));
+    const counts = new Array(d.cats.length).fill(0);
+    const bounds = d.bounds || {};
+    neFeats = d.rows.map((r, i) => {
+      counts[r[2]]++;
+      return { type: 'Feature', id: i, geometry: { type: 'Point', coordinates: [r[0], r[1]] },
+        properties: { i, c: d.cats[r[2]], g: r[3], s: (r[6] + ' ' + d.kinds[r[7]] + ' ' + d.srcs[r[5]]).toLowerCase() } };
+    });
+    $('ne-cats').innerHTML = d.cats.map((c, i) => `<li><label><input type="checkbox" value="${esc(c)}"${activeCats.has(c) ? ' checked' : ''}><span class="sw" style="background:${CAT_COLORS[c]}"></span>${esc(c)}</label><span class="count">${fmt(counts[i])}</span></li>`).join('');
+    d.regions.forEach(rg => bounds[rg] && $('ne-region').insertAdjacentHTML('beforeend', `<option value="${rg}">${esc(d.region_names[rg])}</option>`));
+    $('ne-region').onchange = e => {
+      const b = e.target.value ? bounds[e.target.value] : [-80.6, 37.8, -59.5, 49.5];
+      map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30 });
+    };
+    $('ne-summary').textContent = `${fmt(d.rows.length)} places in ${d.regions.length} states and provinces from Maryland to Maine, Quebec and the Maritimes.`;
+    map.addSource('ne', { type: 'geojson', data: { type: 'FeatureCollection', features: neFeats } });
+    map.addLayer({ id: 'ne', type: 'circle', source: 'ne', layout: { 'circle-sort-key': ['-', 1, ['get', 'g']] }, paint: {
+      'circle-radius': neRadius,
+      'circle-opacity': ['interpolate', ['linear'], ['zoom'], 4, ['case', G, 0.5, 0.9], 9, 1],
+      'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 4, ['case', G, 0.5, 0.9], 9, 1],
+      'circle-color': ['case', ['==', ['get', 'g'], 1], '#ffffff', ['match', ['get', 'c'], ...Object.entries(CAT_COLORS).flat(), '#777']],
+      'circle-stroke-color': ['case', ['==', ['get', 'g'], 1], ['match', ['get', 'c'], ...Object.entries(CAT_COLORS).flat(), '#777'], '#ffffff'],
+      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 4, ['case', ['==', ['get', 'g'], 1], 1, 0.3], 12, ['case', ['==', ['get', 'g'], 1], 2, 1]] } }, LABELS);
+    map.on('click', 'ne', e => showPopup(e.features[0].geometry.coordinates, nePopup(+e.features[0].properties.i)));
+    map.on('mouseenter', 'ne', () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', 'ne', () => map.getCanvas().style.cursor = '');
+    map.on('moveend', () => { if (tab === 'ne') { neShown = 120; renderNE(); } });
+    applyNEFilter();
+    $('loading').hidden = true;
+  });
+  return neLoading;
+}
+function nePopup(i) {
+  const r = NE.rows[i], src = NE.srcs[r[5]];
+  const cat = NE.cats[r[2]], guess = r[3] === 1;
+  return `<div class="pop"><h4>${esc(r[6] || NE.kinds[r[7]] || cat)}</h4>` +
+    `<span class="tag"><span class="sw${guess ? ' ring' : ''}" style="${guess ? 'color' : 'background'}:${CAT_COLORS[cat]}"></span>${esc(cat)}${guess ? ', a guess' : ''}</span><dl>` +
+    (NE.kinds[r[7]] ? `<dt>Type</dt><dd>${esc(NE.kinds[r[7]])}</dd>` : '') +
+    `<dt>Status</dt><dd>${esc(NE.statuses[r[8]])}</dd>` + (r[10] ? `<dt>Note</dt><dd>${esc(r[10])}</dd>` : '') +
+    `<dt>Where</dt><dd>${esc(NE.region_names[NE.regions[r[4]]])}</dd>` +
+    `<dt>Source</dt><dd><a href="${esc(link(src, r[9]))}" target="_blank" rel="noopener">${esc(src)}</a></dd>` +
+    `<dt>Coords</dt><dd>${r[1].toFixed(5)}, ${r[0].toFixed(5)}</dd></dl></div>`;
+}
+function link(src, ref) {
+  return ({
+    'OpenStreetMap': () => 'https://www.openstreetmap.org/' + ({ n: 'node/', w: 'way/', r: 'relation/' })[ref[0]] + ref.slice(1),
+    'Wikidata': () => 'https://www.wikidata.org/wiki/' + ref,
+    'USGS MRDS': () => 'https://mrdata.usgs.gov/mrds/show-mrds.php?dep_id=' + ref,
+    'MSHA': () => 'https://www.msha.gov/data-and-reports/mine-data-retrieval-system',
+    'Quebec MRNF': () => 'https://www.donneesquebec.ca/recherche/dataset/initiative-nationale-pour-les-mines-orphelines-ou-abandonnees',
+    'Nova Scotia DNRR': () => 'https://gesner.novascotia.ca/amosearch/singlereport.aspx?ShaftID=' + encodeURIComponent(ref),
+    'FCC ASR': () => 'https://wireless2.fcc.gov/UlsApp/AsrSearch/asrRegistration.jsp?regKey=' + ref
+  })[src]();
+}
+function applyNEFilter() {
+  if (!NE) return;
+  const q = $('ne-q').value.trim().toLowerCase();
+  const f = ['all', ['in', ['get', 'c'], ['literal', [...activeCats]]]];
+  if (!$('ne-guess').checked) f.push(['==', ['get', 'g'], 0]);
+  if (q) f.push(['in', q, ['get', 's']]);
+  map.setFilter('ne', f);
+  neShown = 120; renderNE();
+}
+function renderNE() {
+  if (!NE) return;
+  const b = map.getBounds(), q = $('ne-q').value.trim().toLowerCase(), guess = $('ne-guess').checked;
+  const inView = [];
+  for (let i = 0; i < NE.rows.length; i++) {
+    const r = NE.rows[i];
+    if (r[0] < b.getWest() || r[0] > b.getEast() || r[1] < b.getSouth() || r[1] > b.getNorth()) continue;
+    if (!activeCats.has(NE.cats[r[2]]) || (!guess && r[3])) continue;
+    if (q && !neFeats[i].properties.s.includes(q)) continue;
+    inView.push(i);
+  }
+  inView.sort((a, c) => (!NE.rows[a][6] - !NE.rows[c][6]) || NE.rows[a][3] - NE.rows[c][3]);
+  $('ne-count').textContent = inView.length ? `${fmt(inView.length)} places in view${inView.length > neShown ? `, showing ${fmt(neShown)}` : ''}. Named places first.` : 'No places in view with these filters.';
+  $('ne-results').innerHTML = inView.slice(0, neShown).map(i => {
+    const r = NE.rows[i], cat = NE.cats[r[2]], guess = r[3] === 1;
+    return `<li><button type="button" data-i="${i}"><span class="sw${guess ? ' ring' : ''}" style="${guess ? 'color' : 'background'}:${CAT_COLORS[cat]}"></span><span class="t">${esc(r[6] || NE.kinds[r[7]] || cat)}</span><span class="s">${esc(NE.kinds[r[7]] || cat)}, ${esc(NE.statuses[r[8]])}</span></button></li>`;
+  }).join('');
+  $('ne-more').innerHTML = inView.length > neShown ? `<button type="button" id="ne-more-btn">Show ${fmt(Math.min(300, inView.length - neShown))} more</button>` : '';
+  const mb = $('ne-more-btn'); if (mb) mb.onclick = () => { neShown += 300; renderNE(); };
+}
+$('ne-results').addEventListener('click', e => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const r = NE.rows[+b.dataset.i];
+  map.flyTo({ center: [r[0], r[1]], zoom: Math.max(map.getZoom(), 15) });
+  showPopup([r[0], r[1]], nePopup(+b.dataset.i));
+});
+$('ne-cats').addEventListener('change', e => { e.target.checked ? activeCats.add(e.target.value) : activeCats.delete(e.target.value); applyNEFilter(); });
+$('cats-all').onclick = () => { activeCats = new Set(NE.cats); $('ne-cats').querySelectorAll('input').forEach(i => i.checked = true); applyNEFilter(); };
+$('cats-none').onclick = () => { activeCats = new Set(); $('ne-cats').querySelectorAll('input').forEach(i => i.checked = false); applyNEFilter(); };
+$('ne-guess').onchange = applyNEFilter;
+let qTimer; $('ne-q').oninput = () => { clearTimeout(qTimer); qTimer = setTimeout(applyNEFilter, 200); };
+$('ne-rail').onchange = e => {
+  if (e.target.checked && !map.getSource('ne-rail')) {
+    $('loading').textContent = 'Loading rail lines…'; $('loading').hidden = false;
+    fetch('data/ne/rail.json').then(r => r.json()).then(d => {
+      map.addSource('ne-rail', { type: 'geojson', data: { type: 'FeatureCollection', features: d.rows.map(r => ({ type: 'Feature',
+        geometry: { type: 'LineString', coordinates: r[3] }, properties: { id: r[0], n: r[1], a: r[2] } })) } });
+      map.addLayer({ id: 'ne-rail', type: 'line', source: 'ne-rail', paint: { 'line-color': '#6b4a2b', 'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.8, 12, 2.2], 'line-dasharray': [2, 1.5], 'line-opacity': 0.8 } }, map.getLayer('ne') ? 'ne' : LABELS);
+      map.on('click', 'ne-rail', ev => { if (map.queryRenderedFeatures(ev.point, { layers: ['ne'] }).length) return;
+        const p = ev.features[0].properties;
+        showPopup(ev.lngLat, `<div class="pop"><h4>${esc(p.n || 'Unnamed rail line')}</h4><dl><dt>Status</dt><dd>${p.a ? 'abandoned' : 'disused'}</dd><dt>Source</dt><dd><a href="https://www.openstreetmap.org/way/${p.id}" target="_blank" rel="noopener">OpenStreetMap</a></dd></dl></div>`); });
+      $('loading').hidden = true;
+    });
+    return;
+  }
+  if (map.getLayer('ne-rail')) map.setLayoutProperty('ne-rail', 'visibility', e.target.checked ? 'visible' : 'none');
+};
+
+/* ---------- tabs & dialog ---------- */
+let tab = 'nj';
+function setTab(t) {
+  tab = t;
+  ['nj', 'ne'].forEach(x => { $('tab-' + x).setAttribute('aria-selected', x === t); $('pane-' + x).hidden = x !== t; });
+  if (popup) popup.remove();
+  const njLayers = ['nj-req', 'nj-prop', 'nj-tracts'], neLayers = ['ne', 'ne-rail'];
+  const vis = (ids, on) => ids.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'));
+  if (t === 'nj') {
+    vis(neLayers, false);
+    document.querySelectorAll('[data-nj]').forEach(cb => map.getLayer('nj-' + cb.dataset.nj) && map.setLayoutProperty('nj-' + cb.dataset.nj, 'visibility', cb.checked ? 'visible' : 'none'));
+    map.fitBounds([[-75.6, 38.9], [-73.9, 41.36]], { padding: 20 });
+  } else {
+    vis(njLayers, false);
+    loadNE().then(() => {
+      vis(['ne'], true); if ($('ne-rail').checked) vis(['ne-rail'], true);
+      if (!$('ne-region').value) map.fitBounds([[-80.6, 37.8], [-59.5, 49.5]], { padding: 20 });
+      renderNE();
+    });
+  }
+  history.replaceState(null, '', t === 'ne' ? '#northeast' : '#nj');
+}
+$('tab-nj').onclick = () => setTab('nj');
+$('tab-ne').onclick = () => setTab('ne');
+document.querySelector('nav.tabs').addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const t = tab === 'nj' ? 'ne' : 'nj'; setTab(t); $('tab-' + t).focus(); }
+});
+$('open-about').onclick = () => $('about').showModal();
+$('close-about').onclick = () => $('about').close();
+$('about').addEventListener('click', e => { if (e.target === $('about')) $('about').close(); });
+if (location.hash === '#northeast') mapReady.then(() => setTab('ne'));
 </script>
 </body>
 </html>
